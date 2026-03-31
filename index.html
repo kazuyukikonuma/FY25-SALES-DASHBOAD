@@ -486,6 +486,11 @@ function renderApp(rows) {
     { key:'Q3', months:['10月','11月','12月'] },
     { key:'Q4', months:['1月','2月','3月'] },
   ];
+  const HALVES = [
+    { key:'H1', months:['4月','5月','6月','7月','8月','9月'] },
+    { key:'H2', months:['10月','11月','12月','1月','2月','3月'] },
+  ];
+  const ALL_PERIODS = [...HALVES, ...QUARTERS];
 
   // Q別集計ヘルパー
   const qSum = (monthObj, qMonths) => qMonths.reduce((s,m)=>s+(monthObj[m]||0),0);
@@ -984,10 +989,16 @@ fetch('data.csv?t='+Date.now())
     <!-- 四半期別パネル -->
     <div id="period-quarterly" class="period-pane">
       <div class="q-tabs">
-        ${QUARTERS.map((q,i)=>`<button class="q-tab-btn${i===0?' active':''}" onclick="switchQTab(this,'qtab-${q.key}')">${q.key} (${q.months[0]}〜${q.months[2]})</button>`).join('')}
+        ${HALVES.map((h,i)=>`<button class="q-tab-btn${i===0?' active':''}" onclick="switchQTab(this,'qtab-${h.key}')">${lang==='zh'?(h.key==='H1'?'上半年':'下半年'):(h.key==='H1'?'上半期':'下半期')} (${h.months[0]}〜${h.months[5]})</button>`).join('')}
+        <span style="display:inline-block;width:1px;background:var(--border);margin:0 6px 2px;height:20px;vertical-align:middle;"></span>
+        ${QUARTERS.map((q,i)=>`<button class="q-tab-btn" onclick="switchQTab(this,'qtab-${q.key}')">${q.key} (${q.months[0]}〜${q.months[2]})</button>`).join('')}
       </div>
-      ${QUARTERS.map((q,i)=>`
-        <div id="qtab-${q.key}" class="q-tab-pane${i===0?' active':''}">
+      ${HALVES.map((h,i)=>`
+        <div id="qtab-${h.key}" class="q-tab-pane${i===0?' active':''}">
+          ${buildMainContent(h.months, m=>m, 'q-'+h.key)}
+        </div>`).join('')}
+      ${QUARTERS.map(q=>`
+        <div id="qtab-${q.key}" class="q-tab-pane">
           ${buildMainContent(q.months, m=>m, 'q-'+q.key)}
         </div>`).join('')}
     </div>
@@ -1044,7 +1055,7 @@ fetch('data.csv?t='+Date.now())
 
   drawChartsForSuffix(MONTHS, 'annual');
   drawChartsForSuffix(MONTHS, 'monthly');
-  QUARTERS.forEach(q=>drawChartsForSuffix(q.months, 'q-'+q.key))
+  ALL_PERIODS.forEach(q=>drawChartsForSuffix(q.months, 'q-'+q.key))
 }
 
 function switchChMenu(btn, id) {
