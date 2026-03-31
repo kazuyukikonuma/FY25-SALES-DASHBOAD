@@ -165,6 +165,47 @@
   .badge-m     { background: var(--accent-m-bg);     color: var(--accent-m); }
   .badge-total { background: var(--accent-total-bg); color: var(--accent-total); }
 
+  /* Period switcher */
+  .period-switcher {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 20px;
+  }
+  .period-btn {
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 24px;
+    font-size: 0.92rem;
+    font-family: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    color: var(--text-sub);
+    transition: all 0.15s;
+  }
+  .period-btn:hover:not(.active) { border-color: var(--text-sub); color: var(--text); }
+  .period-btn.active { background: var(--text); border-color: var(--text); color: #fff; }
+
+  .period-pane { display: none; }
+  .period-pane.active { display: block; }
+
+  /* Q tabs inside quarterly pane */
+  .q-tabs {
+    display: flex; gap: 4px; margin-bottom: 16px;
+    border-bottom: 2px solid var(--border);
+  }
+  .q-tab-btn {
+    background: none; border: none; padding: 9px 20px;
+    font-size: 0.88rem; font-family: inherit; font-weight: 700;
+    cursor: pointer; color: var(--text-sub);
+    border-bottom: 3px solid transparent; margin-bottom: -2px;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .q-tab-btn.active { color: var(--text); border-bottom-color: var(--accent-total); }
+  .q-tab-btn:hover:not(.active) { color: var(--text); }
+  .q-tab-pane { display: none; }
+  .q-tab-pane.active { display: block; }
+
   /* Channel side menu layout */
   .ch-layout {
     display: grid;
@@ -438,12 +479,214 @@ function renderApp(rows) {
   const chTotalVal = ch => MONTHS.reduce((s,m)=>s+CAT_ORDER.reduce((ss,cat)=>ss+chData[ch][cat][m],0),0);
   const sortedCh = [...channels].sort((a,b)=>chTotalVal(b)-chTotalVal(a));
 
+  // 四半期定義
+  const QUARTERS = [
+    { key:'Q1', months:['4月','5月','6月'] },
+    { key:'Q2', months:['7月','8月','9月'] },
+    { key:'Q3', months:['10月','11月','12月'] },
+    { key:'Q4', months:['1月','2月','3月'] },
+  ];
+
+  // Q別集計ヘルパー
+  const qSum = (monthObj, qMonths) => qMonths.reduce((s,m)=>s+(monthObj[m]||0),0);
+  const qLabel = q => lang==='zh' ? q.key : q.key;
+
+  // カテゴリ別Q集計
+  const qTotals = {}; // cat -> q.key -> value
+  CAT_ORDER.forEach(cat=>{
+    qTotals[cat]={};
+    QUARTERS.forEach(q=>{ qTotals[cat][q.key]=byCategory[cat]?qSum(byCategory[cat].months,q.months):0; });
+  });
+  const qGrand = {}; // q.key -> value
+  QUARTERS.forEach(q=>{ qGrand[q.key]=CAT_ORDER.reduce((s,cat)=>s+qTotals[cat][q.key],0); });
+
+  // チャネル別Q集計
+  const chQData = {}; // ch -> cat -> q.key -> value
+  sortedCh.forEach(ch=>{
+    chQData[ch]={};
+    CAT_ORDER.forEach(cat=>{
+      chQData[ch][cat]={};
+      QUARTERS.forEach(q=>{ chQData[ch][cat][q.key]=qSum(chData[ch][cat],q.months); });
+    });
+  });
+
   const unit = lang==='zh'?' 萬':' 万';
+  const Q_LABELS = QUARTERS.map(q=>q.key);
+
+  // ---- HTMLビルダー関数（月別・四半期別共通） ----
+  function buildMainContent(mList, mLabel, chartSuffix) {
+    // mList: 月リスト or Q.keyリスト, mLabel: 表示用ラベル関数
+    const isQ = mList === Q_LABELS;
+    const getVal = (catObj, m) => isQ
+      ? QUARTERS.find(q=>q.key===m).months.reduce((s,mo)=>s+(catObj.months?catObj.months[mo]:catObj[mo]||0),0)
+      : (catObj.months ? catObj.months[m] : catObj[m]||0);
+    const getChVal = (ch, cat, m) => isQ
+      ? qSum(chData[ch][cat], QUARTERS.find(q=>q.key===m).months)
+      : chData[ch][cat][m]||0;
+
+    const catTotals2 = {};
+    CAT_ORDER.forEach(cat=>{
+      catTotals2[cat] = mList.reduce((s,m)=>s+getVal(byCategory[cat]||{months:{}},m),0);
+    });
+    const grandTotal2 = Object.values(catTotals2).reduce((a,b)=>a+b,0);
+    const totalByM2 = {};
+    mList.forEach(m=>{ totalByM2[m]=CAT_ORDER.reduce((s,cat)=>s+getVal(byCategory[cat]||{months:{}},m),0); });
+
+    const chTotalByM = {};
+    mList.forEach(m=>{ chTotalByM[m]=sortedCh.reduce((s,ch)=>s+CAT_ORDER.reduce((ss,cat)=>ss+getChVal(ch,cat,m),0),0); });
+    const sortedChLocal = [...sortedCh].sort((a,b)=>{
+      const ta=mList.reduce((s,m)=>s+CAT_ORDER.reduce((ss,cat)=>ss+getChVal(a,cat,m),0),0);
+      const tb=mList.reduce((s,m)=>s+CAT_ORDER.reduce((ss,cat)=>ss+getChVal(b,cat,m),0),0);
+      return tb-ta;
+    });
+
+    return \`
+      <div class="main-tabs">
+        <button class="main-tab-btn tab-total active" onclick="switchMainTab(this,'pane-total-\${chartSuffix}')">\${t('tabTotal')}</button>
+        \${CAT_ORDER.map(cat=>\`<button class="main-tab-btn \${TAB_CLASS[cat]}" onclick="switchMainTab(this,'pane-\${cat}-\${chartSuffix}')">\${cn(cat)}</button>\`).join('')}
+        <button class="main-tab-btn tab-ch" onclick="switchMainTab(this,'pane-ch-\${chartSuffix}')">\${t('tabCh')}</button>
+      </div>
+
+      <!-- 合計パネル -->
+      <div id="pane-total-\${chartSuffix}" class="main-tab-pane active">
+        <div class="chart-donut-grid">
+          <div class="card">
+            <div class="card-title">\${t('monthTrend')}（\${t('wan')}）</div>
+            <div class="chart-wrap"><canvas id="chart-total-trend-\${chartSuffix}"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-title">\${t('donutTitle')}</div>
+            <div class="chart-wrap"><canvas id="chart-donut-\${chartSuffix}"></canvas></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">\${t('tableTitle')}</div>
+          <div class="table-wrap"><table>
+            <thead><tr><th>\${t('category')}</th>\${mList.map(m=>\`<th>\${m}</th>\`).join('')}<th>\${t('total')}</th></tr></thead>
+            <tbody>
+              \${CAT_ORDER.map(cat=>byCategory[cat]?\`
+                <tr>
+                  <td><span class="cat-badge \${BADGE_CLASS[cat]}">\${cn(cat)}</span></td>
+                  \${mList.map(m=>\`<td>\${fmtWanShort(getVal(byCategory[cat],m))}</td>\`).join('')}
+                  <td><strong>\${fmtWanShort(catTotals2[cat])}</strong></td>
+                </tr>\`:'').join('')}
+              <tr class="total-row c-total">
+                <td>\${t('total')}</td>
+                \${mList.map(m=>\`<td>\${fmtWanShort(totalByM2[m])}</td>\`).join('')}
+                <td>\${fmtWanShort(grandTotal2)}</td>
+              </tr>
+            </tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <!-- 各カテゴリパネル -->
+      \${CAT_ORDER.map(cat=>{
+        const c=byCategory[cat]; if(!c) return '';
+        const chRows=sortedChLocal.map(ch=>({
+          channel:ch,
+          vals:mList.map(m=>getChVal(ch,cat,m)),
+          total:mList.reduce((s,m)=>s+getChVal(ch,cat,m),0)
+        })).filter(r=>r.total>0);
+        const colTots=mList.map(m=>chRows.reduce((s,r)=>s+getChVal(r.channel,cat,m),0));
+        const catTot=colTots.reduce((a,b)=>a+b,0);
+        return \`
+          <div id="pane-\${cat}-\${chartSuffix}" class="main-tab-pane">
+            <div class="card">
+              <div class="card-title">\${cn(cat)} — \${t('monthTrend')}（\${t('wan')}）</div>
+              <div class="chart-wrap"><canvas id="chart-cat-\${cat}-\${chartSuffix}"></canvas></div>
+            </div>
+            <div class="card">
+              <div class="card-title">\${cn(cat)} — \${t('channel')}×\${t('monthTrend')}</div>
+              <div class="table-wrap"><table>
+                <thead><tr><th>\${t('channel')}</th>\${mList.map(m=>\`<th>\${m}</th>\`).join('')}<th>\${t('total')}</th></tr></thead>
+                <tbody>
+                  \${chRows.map(r=>\`<tr><td>\${r.channel}</td>\${r.vals.map(v=>\`<td>\${fmtWanShort(v)}</td>\`).join('')}<td><strong>\${fmtWanShort(r.total)}</strong></td></tr>\`).join('')}
+                  <tr class="total-row \${TOT_CLASS[cat]}">
+                    <td>\${t('total')}</td>
+                    \${colTots.map(v=>\`<td>\${fmtWanShort(v)}</td>\`).join('')}
+                    <td>\${fmtWanShort(catTot)}</td>
+                  </tr>
+                </tbody>
+              </table></div>
+            </div>
+          </div>\`;
+      }).join('')}
+
+      <!-- チャネル別パネル（サイドメニュー） -->
+      <div id="pane-ch-\${chartSuffix}" class="main-tab-pane">
+        <div class="ch-layout">
+          <div class="ch-sidemenu">
+            <div class="ch-sidemenu-title">\${lang==='zh'?'通路列表':'通路一覧'}</div>
+            <button class="ch-menu-btn active" onclick="switchChMenu(this,'sub-ch-all-\${chartSuffix}')">\${t('total')}</button>
+            \${sortedChLocal.map((ch,i)=>\`<button class="ch-menu-btn" onclick="switchChMenu(this,'sub-ch-\${i}-\${chartSuffix}')">\${ch}</button>\`).join('')}
+          </div>
+          <div class="ch-content">
+            <div id="sub-ch-all-\${chartSuffix}" class="sub-tab-pane active">
+              <div class="card">
+                <div class="card-title">\${t('tabCh')} — \${t('monthTrend')}（\${t('wan')}）</div>
+                <div class="chart-wrap"><canvas id="chart-ch-all-\${chartSuffix}"></canvas></div>
+              </div>
+              <div class="card">
+                <div class="card-title">\${t('channelMonthly')}</div>
+                <div class="table-wrap"><table>
+                  <thead><tr><th>\${t('channel')}</th>\${mList.map(m=>\`<th>\${m}</th>\`).join('')}<th>\${t('total')}</th></tr></thead>
+                  <tbody>
+                    \${sortedChLocal.map(ch=>{
+                      const mv=mList.map(m=>CAT_ORDER.reduce((s,cat)=>s+getChVal(ch,cat,m),0));
+                      const tot=mv.reduce((a,b)=>a+b,0);
+                      return \`<tr><td>\${ch}</td>\${mv.map(v=>\`<td>\${fmtWanShort(v)}</td>\`).join('')}<td><strong>\${fmtWanShort(tot)}</strong></td></tr>\`;
+                    }).join('')}
+                    <tr class="total-row c-total">
+                      <td>\${t('total')}</td>
+                      \${mList.map(m=>\`<td>\${fmtWanShort(chTotalByM[m])}</td>\`).join('')}
+                      <td>\${fmtWanShort(grandTotal2)}</td>
+                    </tr>
+                  </tbody>
+                </table></div>
+              </div>
+            </div>
+            \${sortedChLocal.map((ch,i)=>{
+              const mv=mList.map(m=>CAT_ORDER.reduce((s,cat)=>s+getChVal(ch,cat,m),0));
+              const chTot=mv.reduce((a,b)=>a+b,0);
+              const catTots2=CAT_ORDER.map(cat=>mList.reduce((s,m)=>s+getChVal(ch,cat,m),0));
+              return \`
+                <div id="sub-ch-\${i}-\${chartSuffix}" class="sub-tab-pane">
+                  <div class="card">
+                    <div class="card-title">\${ch} — \${t('monthTrend')}（\${t('wan')}）</div>
+                    <div class="chart-wrap"><canvas id="chart-ch-\${i}-\${chartSuffix}"></canvas></div>
+                  </div>
+                  <div class="card">
+                    <div class="card-title">\${ch} — \${t('category')}×\${t('monthTrend')}</div>
+                    <div class="table-wrap"><table>
+                      <thead><tr><th>\${t('category')}</th>\${mList.map(m=>\`<th>\${m}</th>\`).join('')}<th>\${t('total')}</th></tr></thead>
+                      <tbody>
+                        \${CAT_ORDER.map((cat,ci)=>\`
+                          <tr>
+                            <td><span class="cat-badge \${BADGE_CLASS[cat]}">\${cn(cat)}</span></td>
+                            \${mList.map(m=>\`<td>\${fmtWanShort(getChVal(ch,cat,m))}</td>\`).join('')}
+                            <td><strong>\${fmtWanShort(catTots2[ci])}</strong></td>
+                          </tr>\`).join('')}
+                        <tr class="total-row c-total">
+                          <td>\${t('total')}</td>
+                          \${mv.map(v=>\`<td>\${fmtWanShort(v)}</td>\`).join('')}
+                          <td>\${fmtWanShort(chTot)}</td>
+                        </tr>
+                      </tbody>
+                    </table></div>
+                  </div>
+                </div>\`;
+            }).join('')}
+          </div>
+        </div>
+      </div>
+    \`;
+  }
 
   document.getElementById('h-title').textContent = t('title');
-  document.getElementById('data-info').textContent = `FY25 (4月〜3月)`;
+  document.getElementById('data-info').textContent = \`FY25 (4月〜3月)\`;
 
-  document.getElementById('app').innerHTML = `
+  document.getElementById('app').innerHTML = \`
     <div class="kpi-grid">
       <div class="kpi-card cat-total">
         <div class="kpi-label">${t('total')}</div>
@@ -659,7 +902,8 @@ function renderApp(rows) {
 }
 
 function switchChMenu(btn, id) {
-  const pane = document.getElementById('pane-ch');
+  // 最近傍の .main-tab-pane 内で操作
+  const pane = btn.closest('.main-tab-pane');
   pane.querySelectorAll('.ch-menu-btn').forEach(b=>b.classList.remove('active'));
   pane.querySelectorAll('.sub-tab-pane').forEach(p=>p.classList.remove('active'));
   btn.classList.add('active');
@@ -667,9 +911,174 @@ function switchChMenu(btn, id) {
   setTimeout(()=>Object.values(charts).forEach(c=>c.resize()), 50);
 }
 
+function switchPeriod(btn, id) {
+  document.querySelectorAll('.period-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.period-pane').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(id).classList.add('active');
+  setTimeout(()=>Object.values(charts).forEach(c=>c.resize()), 50);
+}
+
+function switchQTab(btn, id) {
+  const parent = btn.closest('.period-pane');
+  parent.querySelectorAll('.q-tab-btn').forEach(b=>b.classList.remove('active'));
+  parent.querySelectorAll('.q-tab-pane').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(id).classList.add('active');
+  setTimeout(()=>Object.values(charts).forEach(c=>c.resize()), 50);
+}
+
 function switchMainTab(btn, id) {
-  document.querySelectorAll('.main-tab-btn').forEach(b=>b.classList.remove('active'));
-  document.querySelectorAll('.main-tab-pane').forEach(p=>p.classList.remove('active'));
+  // 最近傍の period-pane または q-tab-pane 内でスコープ
+  const scope = btn.closest('.q-tab-pane') || btn.closest('.period-pane') || document;
+  scope.querySelectorAll('.main-tab-btn').forEach(b=>b.classList.remove('active'));
+  scope.querySelectorAll('.main-tab-pane').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(id).classList.add('active');
+  setTimeout(()=>Object.values(charts).forEach(c=>c.resize()), 50);
+}
+
+fetch('data.csv?t='+Date.now())
+  .then(r=>{ if(!r.ok) throw new Error('CSV讀取失敗'); return r.text(); })
+  .then(text=>renderApp(parseCSV(text)))
+  .catch(err=>{
+    document.getElementById('app').innerHTML =
+      `<div class="error">⚠️ ${err.message}<br><small>data.csv を同じフォルダに置いてください</small></div>`;
+  });
+</script>
+</body>
+</html>  // ---- KPI（年度通算固定表示） ----
+  document.getElementById('app').innerHTML = `
+    <div class="kpi-grid">
+      <div class="kpi-card cat-total">
+        <div class="kpi-label">${t('total')}</div>
+        <div class="kpi-value">${fmtWanShort(grandTotal)}<span class="kpi-unit">${t('wan')}</span></div>
+        <div class="kpi-sub">${t('annual')}</div>
+      </div>
+      ${CAT_ORDER.map(cat=>`
+        <div class="kpi-card ${CAT_CLASS[cat]}">
+          <div class="kpi-label">${cn(cat)}</div>
+          <div class="kpi-value">${fmtWanShort(totals[cat]||0)}<span class="kpi-unit">${t('wan')}</span></div>
+          <div class="kpi-sub">${t('annual')}</div>
+        </div>
+      `).join('')}
+    </div>
+
+    <!-- 大項目スイッチャー -->
+    <div class="period-switcher">
+      <button class="period-btn active" onclick="switchPeriod(this,'period-annual')">${lang==='zh'?'年度':'年度'}</button>
+      <button class="period-btn" onclick="switchPeriod(this,'period-monthly')">${lang==='zh'?'月別':'月別'}</button>
+      <button class="period-btn" onclick="switchPeriod(this,'period-quarterly')">${lang==='zh'?'季別':'四半期別'}</button>
+    </div>
+
+    <!-- 年度パネル -->
+    <div id="period-annual" class="period-pane active">
+      ${buildMainContent(MONTHS, m=>m, 'annual')}
+    </div>
+
+    <!-- 月別パネル（年度と同じだが明示的に月粒度） -->
+    <div id="period-monthly" class="period-pane">
+      ${buildMainContent(MONTHS, m=>m, 'monthly')}
+    </div>
+
+    <!-- 四半期別パネル -->
+    <div id="period-quarterly" class="period-pane">
+      <div class="q-tabs">
+        ${QUARTERS.map((q,i)=>`<button class="q-tab-btn${i===0?' active':''}" onclick="switchQTab(this,'qtab-${q.key}')">${q.key} (${q.months[0]}〜${q.months[2]})</button>`).join('')}
+      </div>
+      ${QUARTERS.map((q,i)=>`
+        <div id="qtab-${q.key}" class="q-tab-pane${i===0?' active':''}">
+          ${buildMainContent(q.months, m=>m, 'q-'+q.key)}
+        </div>`).join('')}
+    </div>
+  `;
+
+  // ---- チャート描画 ----
+  const unit2 = lang==='zh'?' 萬':' 万';
+
+  function drawChartsForSuffix(mList, suffix) {
+    const isQ = mList.length <= 3 && !MONTHS.includes(mList[0]) === false && mList.length < 12;
+    const getChVal = (ch,cat,m) => chData[ch][cat][m]||0;
+
+    // 合計推移
+    makeBarChart('chart-total-trend-'+suffix, mList,
+      CAT_ORDER.map(cat=>({
+        label:cn(cat),
+        data:mList.map(m=>parseFloat(((byCategory[cat]?byCategory[cat].months[m]:0)/10000).toFixed(1))),
+        backgroundColor:CAT_COLORS[cat]+'cc', borderRadius:3
+      })), unit2);
+
+    // ドーナツ（mListの合計）
+    const dTotals = CAT_ORDER.map(cat=>mList.reduce((s,m)=>s+(byCategory[cat]?byCategory[cat].months[m]:0),0));
+    makeDonutChart('chart-donut-'+suffix, CAT_ORDER.map(cn), dTotals.map(v=>parseFloat((v/10000).toFixed(1))), CAT_ORDER.map(c=>CAT_COLORS[c]));
+
+    // 各カテゴリ：チャネル積み上げ棒
+    CAT_ORDER.forEach(cat=>{
+      const bars = sortedCh.map((ch,i)=>({
+        label:ch,
+        data:mList.map(m=>parseFloat((getChVal(ch,cat,m)/10000).toFixed(1))),
+        backgroundColor:CH_COLORS[i%CH_COLORS.length]+'cc', borderRadius:3,
+        total:mList.reduce((s,m)=>s+getChVal(ch,cat,m),0)
+      })).filter(r=>r.total>0);
+      makeBarChart('chart-cat-'+cat+'-'+suffix, mList, bars, unit2);
+    });
+
+    // チャネル全体積み上げ棒
+    makeBarChart('chart-ch-all-'+suffix, mList,
+      sortedCh.map((ch,i)=>({
+        label:ch,
+        data:mList.map(m=>parseFloat((CAT_ORDER.reduce((s,cat)=>s+getChVal(ch,cat,m),0)/10000).toFixed(1))),
+        backgroundColor:CH_COLORS[i%CH_COLORS.length]+'cc', borderRadius:3
+      })), unit2);
+
+    // 各通路個別チャート
+    sortedCh.forEach((ch,i)=>{
+      makeBarChart('chart-ch-'+i+'-'+suffix, mList,
+        CAT_ORDER.map(cat=>({
+          label:cn(cat),
+          data:mList.map(m=>parseFloat((getChVal(ch,cat,m)/10000).toFixed(1))),
+          backgroundColor:CAT_COLORS[cat]+'cc', borderRadius:3
+        })), unit2);
+    });
+  }
+
+  drawChartsForSuffix(MONTHS, 'annual');
+  drawChartsForSuffix(MONTHS, 'monthly');
+  QUARTERS.forEach(q=>drawChartsForSuffix(q.months, 'q-'+q.key))
+}
+
+function switchChMenu(btn, id) {
+  // 最近傍の .main-tab-pane 内で操作
+  const pane = btn.closest('.main-tab-pane');
+  pane.querySelectorAll('.ch-menu-btn').forEach(b=>b.classList.remove('active'));
+  pane.querySelectorAll('.sub-tab-pane').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(id).classList.add('active');
+  setTimeout(()=>Object.values(charts).forEach(c=>c.resize()), 50);
+}
+
+function switchPeriod(btn, id) {
+  document.querySelectorAll('.period-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.period-pane').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(id).classList.add('active');
+  setTimeout(()=>Object.values(charts).forEach(c=>c.resize()), 50);
+}
+
+function switchQTab(btn, id) {
+  const parent = btn.closest('.period-pane');
+  parent.querySelectorAll('.q-tab-btn').forEach(b=>b.classList.remove('active'));
+  parent.querySelectorAll('.q-tab-pane').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(id).classList.add('active');
+  setTimeout(()=>Object.values(charts).forEach(c=>c.resize()), 50);
+}
+
+function switchMainTab(btn, id) {
+  // 最近傍の period-pane または q-tab-pane 内でスコープ
+  const scope = btn.closest('.q-tab-pane') || btn.closest('.period-pane') || document;
+  scope.querySelectorAll('.main-tab-btn').forEach(b=>b.classList.remove('active'));
+  scope.querySelectorAll('.main-tab-pane').forEach(p=>p.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById(id).classList.add('active');
   setTimeout(()=>Object.values(charts).forEach(c=>c.resize()), 50);
