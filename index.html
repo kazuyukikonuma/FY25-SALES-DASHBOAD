@@ -358,8 +358,8 @@ function buildPaneHTML(mList, sfx, byCat, chData, sortedCh) {
     +'<button class="main-tab-btn tt active" onclick="switchMain(this,\'pane-total-'+sfx+'\')">'+t('total')+'</button>'
     +CATS.map(cat=>'<button class="main-tab-btn '+CAT_CLASS[cat]+'" onclick="switchMain(this,\'pane-'+cat+'-'+sfx+'\')">'+cn(cat)+'</button>').join('')
     +'<button class="main-tab-btn tc" onclick="switchMain(this,\'pane-ch-'+sfx+'\')">'+t('tabCh')+'</button>'
-    +'<button class="main-tab-btn" onclick="switchMain(this,\'pane-cross-'+sfx+\'\')" >'+t(\'cross\')+'</button>'
-    +'<button class="main-tab-btn" onclick="switchMain(this,\'pane-heat-'+sfx+\'\')" >'+t(\'heatmapTab\')+'</button>'
+    +'<button class="main-tab-btn" onclick="switchMain(this,\'pane-cross-'+sfx+'\')">'+t('cross')+'</button>'
+    +'<button class="main-tab-btn" onclick="switchMain(this,\'pane-heat-'+sfx+'\')">'+t('heatmapTab')+'</button>'
     +'</div>'
     // 合計パネル
     +'<div id="pane-total-'+sfx+'" class="main-tab-pane active">'
