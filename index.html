@@ -234,7 +234,7 @@ function drawPct(chart){
 // ---- HTML builder (純粋な文字列連結) ----
 function buildPaneHTML(mList, sfx, byCat, chData, sortedCh) {
   const getV = (cat, m) => byCat[cat] ? (byCat[cat].months[m]||0) : 0;
-  const getCV = (ch, cat, m) => chData[ch][cat][m]||0;
+  const getCV = (ch, cat, m) => (chData[ch]&&chData[ch][cat])?( chData[ch][cat][m]||0):0;
 
   const catTots={}, mTots={};
   CATS.forEach(cat=>{ catTots[cat]=mList.reduce((s,m)=>s+getV(cat,m),0); });
@@ -341,7 +341,7 @@ function buildPaneHTML(mList, sfx, byCat, chData, sortedCh) {
 function drawCharts(mList, sfx, byCat, chData, sortedCh) {
   const unit = lang==='zh'?' 萬':' 万';
   const getV = (cat,m) => byCat[cat]?(byCat[cat].months[m]||0):0;
-  const getCV = (ch,cat,m) => chData[ch][cat][m]||0;
+  const getCV = (ch,cat,m) => (chData[ch]&&chData[ch][cat])?(chData[ch][cat][m]||0):0;
   const chTot = ch => mList.reduce((s,m)=>s+CATS.reduce((ss,cat)=>ss+getCV(ch,cat,m),0),0);
   const sCh = [...sortedCh].sort((a,b)=>chTot(b)-chTot(a));
 
@@ -454,6 +454,7 @@ function renderApp(rows) {
   drawCharts(MONTHS,'annual',byCat,chData,sortedCh);
   drawCharts(qAgg.keys,'quarterly',qAgg.qByCat,qAgg.qChData,sortedCh);
   drawCharts(hAgg.keys,'half',hAgg.qByCat,hAgg.qChData,sortedCh);
+}
 
 // ---- スイッチ関数 ----
 function switchPeriod(btn,id){
