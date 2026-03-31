@@ -165,7 +165,55 @@
   .badge-m     { background: var(--accent-m-bg);     color: var(--accent-m); }
   .badge-total { background: var(--accent-total-bg); color: var(--accent-total); }
 
-  /* Sub tabs for channel */
+  /* Channel side menu layout */
+  .ch-layout {
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    gap: 14px;
+    align-items: start;
+  }
+  .ch-sidemenu {
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    position: sticky;
+    top: 16px;
+  }
+  .ch-sidemenu-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--text-sub);
+    letter-spacing: 0.08em;
+    padding: 12px 14px 8px;
+    border-bottom: 1px solid var(--border-light);
+    text-transform: uppercase;
+  }
+  .ch-menu-btn {
+    display: block;
+    width: 100%;
+    background: none;
+    border: none;
+    border-bottom: 1px solid var(--border-light);
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 0.85rem;
+    font-family: inherit;
+    font-weight: 500;
+    color: var(--text-sub);
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s;
+  }
+  .ch-menu-btn:last-child { border-bottom: none; }
+  .ch-menu-btn:hover:not(.active) { background: var(--bg); color: var(--text); }
+  .ch-menu-btn.active {
+    background: var(--text);
+    color: #fff;
+    font-weight: 700;
+  }
+  .ch-content { min-width: 0; }
+
+  /* Sub tabs for channel (keep for fallback) */
   .sub-tabs {
     display: flex; gap: 2px; flex-wrap: wrap;
     margin-bottom: 16px; border-bottom: 1.5px solid var(--border);
@@ -488,72 +536,78 @@ function renderApp(rows) {
         </div>`;
     }).join('')}
 
-    <!-- チャネル別タブ -->
+    <!-- チャネル別タブ：サイドメニュー -->
     <div id="pane-ch" class="main-tab-pane">
-      <!-- サブタブ：全体 + 各通路 -->
-      <div class="sub-tabs">
-        <button class="sub-tab-btn active" onclick="switchSubTab(this,'sub-ch-all')" data-chart="chart-ch-all">${t('total')}</button>
-        ${sortedCh.map((ch,i)=>`<button class="sub-tab-btn" onclick="switchSubTab(this,'sub-ch-${i}')" data-chart="chart-ch-${i}">${ch}</button>`).join('')}
-      </div>
-
-      <!-- 全通路サブパネル -->
-      <div id="sub-ch-all" class="sub-tab-pane active">
-        <div class="card">
-          <div class="card-title">${t('tabCh')} — ${t('monthTrend')}（${t('wan')}）</div>
-          <div class="chart-wrap"><canvas id="chart-ch-all"></canvas></div>
+      <div class="ch-layout">
+        <!-- サイドメニュー -->
+        <div class="ch-sidemenu">
+          <div class="ch-sidemenu-title" data-ja="通路一覧" data-zh="通路列表">${lang==='zh'?'通路列表':'通路一覧'}</div>
+          <button class="ch-menu-btn active" onclick="switchChMenu(this,'sub-ch-all')">${t('total')}</button>
+          ${sortedCh.map((ch,i)=>`<button class="ch-menu-btn" onclick="switchChMenu(this,'sub-ch-${i}')">${ch}</button>`).join('')}
         </div>
-        <div class="card">
-          <div class="card-title">${t('channelMonthly')}</div>
-          <div class="table-wrap"><table>
-            <thead><tr><th>${t('channel')}</th>${MONTHS.map(m=>`<th>${m}</th>`).join('')}<th>${t('total')}</th></tr></thead>
-            <tbody>
-              ${sortedCh.map(ch=>{
-                const mv = MONTHS.map(m=>CAT_ORDER.reduce((s,cat)=>s+chData[ch][cat][m],0));
-                const tot = mv.reduce((a,b)=>a+b,0);
-                return `<tr><td>${ch}</td>${mv.map(v=>`<td>${fmtWanShort(v)}</td>`).join('')}<td><strong>${fmtWanShort(tot)}</strong></td></tr>`;
-              }).join('')}
-              <tr class="total-row c-total">
-                <td>${t('total')}</td>
-                ${MONTHS.map(m=>`<td>${fmtWanShort(totalByMonth[m])}</td>`).join('')}
-                <td>${fmtWanShort(grandTotal)}</td>
-              </tr>
-            </tbody>
-          </table></div>
-        </div>
-      </div>
 
-      <!-- 各通路サブパネル -->
-      ${sortedCh.map((ch,i)=>{
-        const mv = MONTHS.map(m=>CAT_ORDER.reduce((s,cat)=>s+chData[ch][cat][m],0));
-        const chTotal = mv.reduce((a,b)=>a+b,0);
-        const catTotals = CAT_ORDER.map(cat=>MONTHS.reduce((s,m)=>s+chData[ch][cat][m],0));
-        return `
-          <div id="sub-ch-${i}" class="sub-tab-pane">
+        <!-- コンテンツエリア -->
+        <div class="ch-content">
+          <!-- 全通路パネル -->
+          <div id="sub-ch-all" class="sub-tab-pane active">
             <div class="card">
-              <div class="card-title">${ch} — ${t('monthTrend')}（${t('wan')}）</div>
-              <div class="chart-wrap"><canvas id="chart-ch-${i}"></canvas></div>
+              <div class="card-title">${t('tabCh')} — ${t('monthTrend')}（${t('wan')}）</div>
+              <div class="chart-wrap"><canvas id="chart-ch-all"></canvas></div>
             </div>
             <div class="card">
-              <div class="card-title">${ch} — ${t('category')}×${t('monthTrend')}</div>
+              <div class="card-title">${t('channelMonthly')}</div>
               <div class="table-wrap"><table>
-                <thead><tr><th>${t('category')}</th>${MONTHS.map(m=>`<th>${m}</th>`).join('')}<th>${t('total')}</th></tr></thead>
+                <thead><tr><th>${t('channel')}</th>${MONTHS.map(m=>`<th>${m}</th>`).join('')}<th>${t('total')}</th></tr></thead>
                 <tbody>
-                  ${CAT_ORDER.map((cat,ci)=>`
-                    <tr>
-                      <td><span class="cat-badge ${BADGE_CLASS[cat]}">${cn(cat)}</span></td>
-                      ${MONTHS.map(m=>`<td>${fmtWanShort(chData[ch][cat][m])}</td>`).join('')}
-                      <td><strong>${fmtWanShort(catTotals[ci])}</strong></td>
-                    </tr>`).join('')}
+                  ${sortedCh.map(ch=>{
+                    const mv = MONTHS.map(m=>CAT_ORDER.reduce((s,cat)=>s+chData[ch][cat][m],0));
+                    const tot = mv.reduce((a,b)=>a+b,0);
+                    return `<tr><td>${ch}</td>${mv.map(v=>`<td>${fmtWanShort(v)}</td>`).join('')}<td><strong>${fmtWanShort(tot)}</strong></td></tr>`;
+                  }).join('')}
                   <tr class="total-row c-total">
                     <td>${t('total')}</td>
-                    ${mv.map(v=>`<td>${fmtWanShort(v)}</td>`).join('')}
-                    <td>${fmtWanShort(chTotal)}</td>
+                    ${MONTHS.map(m=>`<td>${fmtWanShort(totalByMonth[m])}</td>`).join('')}
+                    <td>${fmtWanShort(grandTotal)}</td>
                   </tr>
                 </tbody>
               </table></div>
             </div>
-          </div>`;
-      }).join('')}
+          </div>
+
+          <!-- 各通路パネル -->
+          ${sortedCh.map((ch,i)=>{
+            const mv = MONTHS.map(m=>CAT_ORDER.reduce((s,cat)=>s+chData[ch][cat][m],0));
+            const chTotal = mv.reduce((a,b)=>a+b,0);
+            const catTotals = CAT_ORDER.map(cat=>MONTHS.reduce((s,m)=>s+chData[ch][cat][m],0));
+            return `
+              <div id="sub-ch-${i}" class="sub-tab-pane">
+                <div class="card">
+                  <div class="card-title">${ch} — ${t('monthTrend')}（${t('wan')}）</div>
+                  <div class="chart-wrap"><canvas id="chart-ch-${i}"></canvas></div>
+                </div>
+                <div class="card">
+                  <div class="card-title">${ch} — ${t('category')}×${t('monthTrend')}</div>
+                  <div class="table-wrap"><table>
+                    <thead><tr><th>${t('category')}</th>${MONTHS.map(m=>`<th>${m}</th>`).join('')}<th>${t('total')}</th></tr></thead>
+                    <tbody>
+                      ${CAT_ORDER.map((cat,ci)=>`
+                        <tr>
+                          <td><span class="cat-badge ${BADGE_CLASS[cat]}">${cn(cat)}</span></td>
+                          ${MONTHS.map(m=>`<td>${fmtWanShort(chData[ch][cat][m])}</td>`).join('')}
+                          <td><strong>${fmtWanShort(catTotals[ci])}</strong></td>
+                        </tr>`).join('')}
+                      <tr class="total-row c-total">
+                        <td>${t('total')}</td>
+                        ${mv.map(v=>`<td>${fmtWanShort(v)}</td>`).join('')}
+                        <td>${fmtWanShort(chTotal)}</td>
+                      </tr>
+                    </tbody>
+                  </table></div>
+                </div>
+              </div>`;
+          }).join('')}
+        </div>
+      </div>
     </div>
   `;
 
@@ -604,10 +658,10 @@ function renderApp(rows) {
   });
 }
 
-function switchSubTab(btn, id) {
-  const parent = btn.closest('.main-tab-pane');
-  parent.querySelectorAll('.sub-tab-btn').forEach(b=>b.classList.remove('active'));
-  parent.querySelectorAll('.sub-tab-pane').forEach(p=>p.classList.remove('active'));
+function switchChMenu(btn, id) {
+  const pane = document.getElementById('pane-ch');
+  pane.querySelectorAll('.ch-menu-btn').forEach(b=>b.classList.remove('active'));
+  pane.querySelectorAll('.sub-tab-pane').forEach(p=>p.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById(id).classList.add('active');
   setTimeout(()=>Object.values(charts).forEach(c=>c.resize()), 50);
