@@ -161,14 +161,14 @@ const I18N = {
       tbl:'月別明細',chMonthly:'チャネル×月次',tabCh:'チャネル別',chList:'通路一覧',
       periodY:'年度',periodQ:'四半期別',periodH:'上/下半期',
       H1:'上半期',H2:'下半期',
-      cross:'クロス分析',heatmap:'ヒートマップ（通路×商品群）',crossChart:'通路×商品群 グループ棒グラフ',
+      cross:'クロス分析',heatmap:'ヒートマップ（通路×商品群）',heatmapTab:'ヒートマップ',crossChart:'通路×商品群 グループ棒グラフ',
       catNames:{'學習':'学習','周邊':'周邊','Mirafeel':'Mirafeel'}},
   zh:{title:'FY25 銷售額儀表板',annual:'年度合計（未稅）',total:'合計',wan:'萬元',
       cat:'品類',ch:'通路',trend:'月次趨勢',donut:'品類構成比',
       tbl:'月別明細',chMonthly:'通路×月次',tabCh:'通路別',chList:'通路列表',
       periodY:'年度',periodQ:'季別',periodH:'上/下半年',
       H1:'上半年',H2:'下半年',
-      cross:'交叉分析',heatmap:'熱力圖（通路×商品群）',crossChart:'通路×商品群 群組長條圖',
+      cross:'交叉分析',heatmap:'熱力圖（通路×商品群）',heatmapTab:'熱力圖',crossChart:'通路×商品群 群組長條圖',
       catNames:{'學習':'學習','周邊':'周邊','Mirafeel':'Mirafeel'}},
 };
 
@@ -339,13 +339,16 @@ function buildPaneHTML(mList, sfx, byCat, chData, sortedCh) {
     return '<tr><td>'+ch+'</td>'+cv.map(v=>'<td style="background:'+heatBg(v)+';color:'+heatFg(v)+'">'+fw(v)+'</td>').join('')+'<td><strong>'+fw(ct)+'</strong></td></tr>';
   }).join('');
   const hmTotRow='<tr class="tr-total"><td>'+t('total')+'</td>'+crossCatTotals.map(v=>'<td>'+fw(v)+'</td>').join('')+'<td>'+fw(grand)+'</td></tr>';
-  const crossPane='<div id="pane-cross-'+sfx+'" class="main-tab-pane">'
+  const heatPane='<div id="pane-heat-'+sfx+'" class="main-tab-pane">'
     +'<div class="card"><div class="card-title">'+t('heatmap')+'</div>'
     +'<div class="heatmap heatmap-wrap"><table><thead><tr><th>'+t('ch')+'</th>'
     +CATS.map(cat=>'<th>'+cn(cat)+'</th>').join('')+'<th>'+t('total')+'</th></tr></thead>'
     +'<tbody>'+hmRows+hmTotRow+'</tbody></table></div></div>'
+    +'</div>';
+  const crossPane='<div id="pane-cross-'+sfx+'" class="main-tab-pane">'
     +'<div class="card"><div class="card-title">'+t('crossChart')+'</div>'
-    +'<div class="cross-chart-wrap"><canvas id="chart-cross-'+sfx+'"></canvas></div></div></div>';
+    +'<div class="cross-chart-wrap"><canvas id="chart-cross-'+sfx+'"></canvas></div></div>'
+    +'</div>';
     +'<div class="ch-layout">'
     +'<div class="ch-side"><div class="ch-side-title">'+t('chList')+'</div>'+sideMenuBtns+'</div>'
     +'<div class="ch-content">'+allChPane+indivChPanes+'</div>'
@@ -356,6 +359,7 @@ function buildPaneHTML(mList, sfx, byCat, chData, sortedCh) {
     +CATS.map(cat=>'<button class="main-tab-btn '+CAT_CLASS[cat]+'" onclick="switchMain(this,\'pane-'+cat+'-'+sfx+'\')">'+cn(cat)+'</button>').join('')
     +'<button class="main-tab-btn tc" onclick="switchMain(this,\'pane-ch-'+sfx+'\')">'+t('tabCh')+'</button>'
     +'<button class="main-tab-btn" onclick="switchMain(this,\'pane-cross-'+sfx+\'\')" >'+t(\'cross\')+'</button>'
+    +'<button class="main-tab-btn" onclick="switchMain(this,\'pane-heat-'+sfx+\'\')" >'+t(\'heatmapTab\')+'</button>'
     +'</div>'
     // 合計パネル
     +'<div id="pane-total-'+sfx+'" class="main-tab-pane active">'
@@ -368,7 +372,7 @@ function buildPaneHTML(mList, sfx, byCat, chData, sortedCh) {
     +'<tbody>'+catRows+totRow+'</tbody>'
     +'</table></div></div>'
     +'</div>'
-    +catPanes+chPane;
+    +catPanes+chPane+crossPane+heatPane;
 }
 
 // ---- チャート描画 ----
