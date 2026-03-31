@@ -112,6 +112,19 @@
   .heatmap td:first-child{text-align:left;font-family:'Noto Sans JP','Noto Sans TC',sans-serif;font-weight:600;}
   .heatmap .tr-total td{font-weight:700;background:var(--bg)!important;border-top:2px solid var(--border);}
 
+  /* Cross filter UI */
+  .cross-filters{ margin-bottom:14px; }
+  .cross-filter-row{ display:flex; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:10px; }
+  .cross-sel{ padding:6px 10px; border:1.5px solid var(--border); border-radius:6px; font-family:inherit; font-size:.85rem; color:var(--text); background:var(--surface); cursor:pointer; }
+  .cross-add-btn{ padding:6px 14px; background:var(--text); color:#fff; border:none; border-radius:6px; font-family:inherit; font-size:.83rem; font-weight:600; cursor:pointer; }
+  .cross-add-btn:hover{ opacity:.85; }
+  .cross-clear-btn{ padding:6px 14px; background:none; color:var(--text-sub); border:1.5px solid var(--border); border-radius:6px; font-family:inherit; font-size:.83rem; font-weight:600; cursor:pointer; }
+  .cross-clear-btn:hover{ background:var(--bg); }
+  .cross-series-list{ display:flex; flex-wrap:wrap; gap:6px; min-height:24px; }
+  .cross-tag{ display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:20px; font-size:.8rem; font-weight:600; }
+  .cross-tag button{ background:none; border:none; cursor:pointer; font-size:.9rem; line-height:1; opacity:.7; }
+  .cross-tag button:hover{ opacity:1; }
+
   /* Cross chart */
   .cross-chart-wrap{position:relative;height:300px;}
 
@@ -161,14 +174,14 @@ const I18N = {
       tbl:'月別明細',chMonthly:'チャネル×月次',tabCh:'チャネル別',chList:'通路一覧',
       periodY:'年度',periodQ:'四半期別',periodH:'上/下半期',
       H1:'上半期',H2:'下半期',
-      cross:'クロス分析',heatmap:'ヒートマップ（通路×商品群）',heatmapTab:'ヒートマップ',crossChart:'通路×商品群 グループ棒グラフ',
+      cross:'クロス分析',heatmap:'ヒートマップ（通路×商品群）',heatmapTab:'ヒートマップ',crossChart:'絞り込み時系列グラフ',crossAdd:'系列追加',crossClear:'全消去',crossAll:'全て',
       catNames:{'學習':'学習','周邊':'周邊','Mirafeel':'Mirafeel'}},
   zh:{title:'FY25 銷售額儀表板',annual:'年度合計（未稅）',total:'合計',wan:'萬元',
       cat:'品類',ch:'通路',trend:'月次趨勢',donut:'品類構成比',
       tbl:'月別明細',chMonthly:'通路×月次',tabCh:'通路別',chList:'通路列表',
       periodY:'年度',periodQ:'季別',periodH:'上/下半年',
       H1:'上半年',H2:'下半年',
-      cross:'交叉分析',heatmap:'熱力圖（通路×商品群）',heatmapTab:'熱力圖',crossChart:'通路×商品群 群組長條圖',
+      cross:'交叉分析',heatmap:'熱力圖（通路×商品群）',heatmapTab:'熱力圖',crossChart:'篩選時序圖',crossAdd:'新增系列',crossClear:'清除全部',crossAll:'全部',
       catNames:{'學習':'學習','周邊':'周邊','Mirafeel':'Mirafeel'}},
 };
 
@@ -349,9 +362,28 @@ function buildPaneHTML(mList, sfx, byCat, chData, sortedCh) {
     +CATS.map(cat=>'<th>'+cn(cat)+'</th>').join('')+'<th>'+t('total')+'</th></tr></thead>'
     +'<tbody>'+hmRows+hmTotRow+'</tbody></table></div></div>'
     +'</div>';
-  const crossPane='<div id="pane-cross-'+sfx+'" class="main-tab-pane">'
-    +'<div class="card"><div class="card-title">'+t('crossChart')+'</div>'
-    +'<div class="cross-chart-wrap"><canvas id="chart-cross-'+sfx+'"></canvas></div></div>'
+  // クロス分析：商品群×通路のフィルター型時系列ビュー
+  // グローバルに参照できるよう、sfxをdata属性として埋め込む
+  const crossPane='<div id="pane-cross-'+sfx+'" class="main-tab-pane" data-sfx="'+sfx+'">'
+    +'<div class="card">'
+    +'<div class="cross-filters">'
+    +'<div class="cross-filter-row">'
+    +'<label>'+t('cat')+': <select class="cross-sel cross-cat" onchange="updateCross(this)">'
+    +'<option value="">— '+t('total')+' —</option>'
+    +CATS.map(cat=>'<option value="'+cat+'">'+cn(cat)+'</option>').join('')
+    +'</select></label>'
+    +'<label style="margin-left:16px">'+t('ch')+': <select class="cross-sel cross-ch" onchange="updateCross(this)">'
+    +'<option value="">— '+t('total')+' —</option>'
+    +sCh.map(ch=>'<option value="'+ch+'">'+ch+'</option>').join('')
+    +'</select></label>'
+    +'<button class="cross-add-btn" onclick="addCrossSeries(this)">＋ '+t('crossAdd')+'</button>'
+    +'<button class="cross-clear-btn" onclick="clearCross(this)">✕ '+t('crossClear')+'</button>'
+    +'</div>'
+    +'<div class="cross-series-list"></div>'
+    +'</div>'
+    +'<div class="card-title" style="margin-top:12px">'+t('crossChart')+'</div>'
+    +'<div class="cross-chart-wrap"><canvas id="chart-cross-'+sfx+'"></canvas></div>'
+    +'</div>'
     +'</div>';
   return '<div class="main-tabs">'
     +'<button class="main-tab-btn tt active" onclick="switchMain(this,\'pane-total-'+sfx+'\')">'+t('total')+'</button>'
@@ -419,32 +451,6 @@ function drawCharts(mList, sfx, byCat, chData, sortedCh) {
       backgroundColor:CAT_COLORS[cat]+'cc', borderRadius:3
     })), unit);
   });
-
-  // クロス分析：チャネルをX軸、カテゴリを系列にしたグループ棒グラフ
-  destroyChart('chart-cross-'+sfx);
-  const crossEl = document.getElementById('chart-cross-'+sfx);
-  if(crossEl) {
-    charts['chart-cross-'+sfx] = new Chart(crossEl, {
-      type:'bar',
-      data:{
-        labels: sCh,
-        datasets: CATS.map(cat=>({
-          label: cn(cat),
-          data: sCh.map(ch=>parseFloat((mList.reduce((s,m)=>s+getCV(ch,cat,m),0)/10000).toFixed(1))),
-          backgroundColor: CAT_COLORS[cat]+'cc',
-          borderRadius: 3
-        }))
-      },
-      options:{
-        responsive:true, maintainAspectRatio:false,
-        plugins:{legend:{labels:{color:'#111827',font:{size:12,weight:'600'}}}},
-        scales:{
-          x:{ticks:tickS, grid:{color:gridC}},
-          y:{ticks:{...tickS, callback:v=>v+unit}, grid:{color:gridC}}
-        }
-      }
-    });
-  }
 }
 
 // ---- メイン描画 ----
@@ -517,6 +523,132 @@ function renderApp(rows) {
   drawCharts(MONTHS,'annual',byCat,chData,sortedCh);
   drawCharts(qAgg.keys,'quarterly',qAgg.qByCat,qAgg.qChData,sortedCh);
   drawCharts(hAgg.keys,'half',hAgg.qByCat,hAgg.qChData,sortedCh);
+}
+
+
+// ---- クロス分析インタラクティブ関数 ----
+const CROSS_COLORS = ['#2563eb','#059669','#7c3aed','#dc2626','#d97706','#0891b2','#be185d','#065f46'];
+let crossSeriesMap = {}; // sfx -> [{cat, ch, label, color}]
+
+function getCrossData(sfx) {
+  // 現在のperiodのデータを取得
+  const pane = document.getElementById('pane-cross-'+sfx);
+  if(!pane) return {mList:MONTHS, byCat:null, chData:null};
+  // period-pane のIDからperiodを判定
+  const periodPane = pane.closest('.period-pane');
+  const pid = periodPane ? periodPane.id : 'p-annual';
+  if(pid==='p-quarterly') {
+    return {mList:['Q1','Q2','Q3','Q4'], type:'quarterly'};
+  } else if(pid==='p-half') {
+    return {mList:['H1','H2'], type:'half'};
+  }
+  return {mList:MONTHS, type:'annual'};
+}
+
+function getSeriesData(cat, ch, mList, type) {
+  // globalRows から集計
+  if(!globalRows) return mList.map(()=>0);
+  const rows = globalRows.filter(r=>(cat?r.category===cat:true)&&(ch?r.channel===ch:true));
+  if(type==='quarterly') {
+    return QUARTERS.map(q=>rows.reduce((s,r)=>s+q.months.reduce((ss,m)=>ss+(r[m]||0),0),0)/10000);
+  } else if(type==='half') {
+    return HALVES.map(h=>rows.reduce((s,r)=>s+h.months.reduce((ss,m)=>ss+(r[m]||0),0),0)/10000);
+  }
+  return MONTHS.map(m=>rows.reduce((s,r)=>s+(r[m]||0),0)/10000);
+}
+
+function addCrossSeries(btn) {
+  const pane = btn.closest('.main-tab-pane');
+  const sfx = pane.dataset.sfx;
+  const catSel = pane.querySelector('.cross-cat');
+  const chSel  = pane.querySelector('.cross-ch');
+  const cat = catSel.value;
+  const ch  = chSel.value;
+
+  if(!crossSeriesMap[sfx]) crossSeriesMap[sfx]=[];
+  const label = (cat?I18N[lang].catNames[cat]||cat:t('crossAll')) + ' × ' + (ch||t('crossAll'));
+  // 重複チェック
+  if(crossSeriesMap[sfx].find(s=>s.cat===cat&&s.ch===ch)) return;
+
+  const color = CROSS_COLORS[crossSeriesMap[sfx].length % CROSS_COLORS.length];
+  crossSeriesMap[sfx].push({cat,ch,label,color});
+
+  // タグ表示
+  const tagList = pane.querySelector('.cross-series-list');
+  const idx = crossSeriesMap[sfx].length-1;
+  const tag = document.createElement('span');
+  tag.className='cross-tag';
+  tag.dataset.idx=idx;
+  tag.style.background=color+'22'; tag.style.color=color; tag.style.border='1.5px solid '+color;
+  tag.innerHTML = label+' <button onclick="removeCrossSeries(this,''+sfx+'','+idx+')">✕</button>';
+  tagList.appendChild(tag);
+
+  renderCrossChart(sfx);
+}
+
+function removeCrossSeries(btn, sfx, idx) {
+  if(!crossSeriesMap[sfx]) return;
+  crossSeriesMap[sfx].splice(idx,1);
+  const pane = document.getElementById('pane-cross-'+sfx);
+  const tagList = pane.querySelector('.cross-series-list');
+  tagList.innerHTML='';
+  crossSeriesMap[sfx].forEach((s,i)=>{
+    const tag=document.createElement('span');
+    tag.className='cross-tag'; tag.dataset.idx=i;
+    tag.style.background=s.color+'22'; tag.style.color=s.color; tag.style.border='1.5px solid '+s.color;
+    tag.innerHTML=s.label+' <button onclick="removeCrossSeries(this,''+sfx+'','+i+')">✕</button>';
+    tagList.appendChild(tag);
+  });
+  renderCrossChart(sfx);
+}
+
+function clearCross(btn) {
+  const pane = btn.closest('.main-tab-pane');
+  const sfx = pane.dataset.sfx;
+  crossSeriesMap[sfx]=[];
+  pane.querySelector('.cross-series-list').innerHTML='';
+  renderCrossChart(sfx);
+}
+
+function updateCross(sel) {
+  // セレクト変更時は何もしない（追加ボタンで追加）
+}
+
+function renderCrossChart(sfx) {
+  destroyChart('chart-cross-'+sfx);
+  const el = document.getElementById('chart-cross-'+sfx);
+  if(!el) return;
+  const series = crossSeriesMap[sfx]||[];
+  const {mList, type} = getCrossData(sfx);
+  const unit = lang==='zh'?' 萬':' 万';
+
+  if(!series.length) return; // 系列なければ描画しない
+
+  charts['chart-cross-'+sfx] = new Chart(el, {
+    type:'line',
+    data:{
+      labels: mList,
+      datasets: series.map(s=>({
+        label: s.label,
+        data: getSeriesData(s.cat, s.ch, mList, type).map(v=>parseFloat(v.toFixed(1))),
+        borderColor: s.color,
+        backgroundColor: s.color+'22',
+        borderWidth: 2.5,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        tension: 0.3,
+        fill: false
+      }))
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#111827',font:{size:12,weight:'600'}}}},
+      scales:{
+        x:{ticks:tickS, grid:{color:gridC}},
+        y:{ticks:{...tickS, callback:v=>v+unit}, grid:{color:gridC}}
+      }
+    }
+  });
 }
 
 // ---- スイッチ関数 ----
