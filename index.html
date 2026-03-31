@@ -327,6 +327,10 @@ function buildPaneHTML(mList, sfx, byCat, chData, sortedCh) {
   }).join('');
 
   const chPane = '<div id="pane-ch-'+sfx+'" class="main-tab-pane">'
+    +'<div class="ch-layout">'
+    +'<div class="ch-side"><div class="ch-side-title">'+t('chList')+'</div>'+sideMenuBtns+'</div>'
+    +'<div class="ch-content">'+allChPane+indivChPanes+'</div>'
+    +'</div></div>';
 
   // クロス分析パネル
   const crossCatTotals = CATS.map(cat=>mList.reduce((s,m)=>s+getV(cat,m),0));
@@ -349,11 +353,6 @@ function buildPaneHTML(mList, sfx, byCat, chData, sortedCh) {
     +'<div class="card"><div class="card-title">'+t('crossChart')+'</div>'
     +'<div class="cross-chart-wrap"><canvas id="chart-cross-'+sfx+'"></canvas></div></div>'
     +'</div>';
-    +'<div class="ch-layout">'
-    +'<div class="ch-side"><div class="ch-side-title">'+t('chList')+'</div>'+sideMenuBtns+'</div>'
-    +'<div class="ch-content">'+allChPane+indivChPanes+'</div>'
-    +'</div></div>';
-
   return '<div class="main-tabs">'
     +'<button class="main-tab-btn tt active" onclick="switchMain(this,\'pane-total-'+sfx+'\')">'+t('total')+'</button>'
     +CATS.map(cat=>'<button class="main-tab-btn '+CAT_CLASS[cat]+'" onclick="switchMain(this,\'pane-'+cat+'-'+sfx+'\')">'+cn(cat)+'</button>').join('')
