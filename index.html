@@ -269,10 +269,7 @@ function aggByCategory(rows) {
 }
 
 function fmtWanShort(n) {
-  const w = n/10000;
-  const parts = w.toFixed(1).split('.');
-  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g,',');
-  return parts.join('.');
+  return (n/10000).toFixed(1);
 }
 
 function destroyChart(id) {
@@ -516,18 +513,22 @@ function renderApp(rows) {
 
   CAT_ORDER.forEach(cat=>{
     const c=byCategory[cat]; if(!c) return;
-    makeLineChart(`chart-cat-${cat}`, MONTHS, [{
-      label:cn(cat),
-      data:MONTHS.map(m=>parseFloat((c.months[m]/10000).toFixed(1))),
-      borderColor:CAT_COLORS[cat], backgroundColor:CAT_COLORS[cat]+'22', fill:true
-    }], unit2);
+    const chRowsForBar = sortedCh.map((ch,i)=>({
+      label:ch,
+      data:MONTHS.map(m=>parseFloat((chData[ch][cat][m]/10000).toFixed(1))),
+      backgroundColor:CH_COLORS[i%CH_COLORS.length]+'cc',
+      borderRadius:3,
+      total:MONTHS.reduce((s,m)=>s+chData[ch][cat][m],0)
+    })).filter(r=>r.total>0);
+    makeBarChart(`chart-cat-${cat}`, MONTHS, chRowsForBar, unit2);
   });
 
-  makeLineChart('chart-ch-trend', MONTHS,
-    sortedCh.slice(0,5).map((ch,i)=>({
+  makeBarChart('chart-ch-trend', MONTHS,
+    sortedCh.map((ch,i)=>({
       label:ch,
       data:MONTHS.map(m=>parseFloat((CAT_ORDER.reduce((s,cat)=>s+chData[ch][cat][m],0)/10000).toFixed(1))),
-      borderColor:CH_COLORS[i], backgroundColor:CH_COLORS[i]+'22', fill:false
+      backgroundColor:CH_COLORS[i%CH_COLORS.length]+'cc',
+      borderRadius:3
     })), unit2);
 }
 
