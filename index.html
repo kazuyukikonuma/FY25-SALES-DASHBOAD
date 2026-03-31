@@ -6,23 +6,23 @@
 <title>FY25 銷售額儀表板</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600;700&family=DM+Mono:wght@400;500;600&display=swap');
 
   :root {
-    --bg: #f8f9fb;
+    --bg: #f4f6f9;
     --surface: #ffffff;
-    --border: #e2e6ed;
-    --border-light: #f0f2f6;
-    --text: #1a1e2e;
-    --text-dim: #7a839e;
-    --accent-l: #3b6ef8;
-    --accent-p: #0fa888;
-    --accent-m: #9b59d0;
-    --accent-total: #e8572a;
-    --accent-l-light: #eef2ff;
-    --accent-p-light: #e6faf6;
-    --accent-m-light: #f5eeff;
-    --accent-total-light: #fff0eb;
+    --border: #d8dde8;
+    --border-light: #edf0f5;
+    --text: #111827;
+    --text-sub: #374151;
+    --accent-l: #2563eb;
+    --accent-p: #059669;
+    --accent-m: #7c3aed;
+    --accent-total: #dc2626;
+    --accent-l-bg: #eff6ff;
+    --accent-p-bg: #ecfdf5;
+    --accent-m-bg: #f5f3ff;
+    --accent-total-bg: #fef2f2;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -32,235 +32,154 @@
     background: var(--bg);
     color: var(--text);
     min-height: 100vh;
-    padding: 28px 32px;
+    padding: 24px 28px;
+    font-size: 15px;
   }
 
   header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 28px;
-    padding-bottom: 20px;
+    margin-bottom: 24px;
+    padding-bottom: 18px;
     border-bottom: 2px solid var(--border);
   }
 
   .header-left { display: flex; align-items: baseline; gap: 14px; }
 
-  header h1 {
-    font-size: 1.3rem;
-    font-weight: 600;
-    color: var(--text);
-    letter-spacing: -0.01em;
-  }
+  header h1 { font-size: 1.35rem; font-weight: 700; color: var(--text); }
 
-  #data-info {
-    font-size: 0.8rem;
-    color: var(--text-dim);
-    font-family: 'DM Mono', monospace;
-  }
+  #data-info { font-size: 0.82rem; color: var(--text-sub); font-family: 'DM Mono', monospace; }
 
-  /* Language toggle */
-  .lang-toggle {
-    display: flex;
-    gap: 0;
-    border: 1.5px solid var(--border);
-    border-radius: 8px;
-    overflow: hidden;
-  }
+  .lang-toggle { display: flex; border: 2px solid var(--border); border-radius: 8px; overflow: hidden; }
 
   .lang-btn {
-    background: none;
-    border: none;
-    padding: 6px 16px;
-    font-size: 0.8rem;
-    font-family: inherit;
-    cursor: pointer;
-    color: var(--text-dim);
-    transition: background 0.15s, color 0.15s;
+    background: none; border: none; padding: 7px 18px;
+    font-size: 0.85rem; font-family: inherit; font-weight: 500;
+    cursor: pointer; color: var(--text-sub); transition: background 0.15s, color 0.15s;
   }
+  .lang-btn.active { background: var(--text); color: #fff; }
+  .lang-btn:not(.active):hover { background: var(--border-light); color: var(--text); }
 
-  .lang-btn.active {
-    background: var(--text);
-    color: #fff;
-  }
-
-  .lang-btn:not(.active):hover { background: var(--border-light); }
-
-  /* KPI */
   .kpi-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
-    margin-bottom: 20px;
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 12px; margin-bottom: 20px;
   }
 
   .kpi-card {
-    background: var(--surface);
-    border: 1.5px solid var(--border);
-    border-radius: 12px;
-    padding: 18px 20px;
-    position: relative;
-    overflow: hidden;
+    background: var(--surface); border: 2px solid var(--border);
+    border-radius: 12px; padding: 18px 20px;
   }
+  .kpi-card.cat-total { border-top: 4px solid var(--accent-total); }
+  .kpi-card.cat-l     { border-top: 4px solid var(--accent-l); }
+  .kpi-card.cat-p     { border-top: 4px solid var(--accent-p); }
+  .kpi-card.cat-m     { border-top: 4px solid var(--accent-m); }
 
-  .kpi-card.cat-l { border-top: 3px solid var(--accent-l); }
-  .kpi-card.cat-p { border-top: 3px solid var(--accent-p); }
-  .kpi-card.cat-m { border-top: 3px solid var(--accent-m); }
-  .kpi-card.cat-total { border-top: 3px solid var(--accent-total); }
-
-  .kpi-label {
-    font-size: 0.72rem;
-    color: var(--text-dim);
-    font-weight: 500;
-    letter-spacing: 0.05em;
-    margin-bottom: 8px;
-  }
-
+  .kpi-label { font-size: 0.82rem; font-weight: 600; color: var(--text-sub); margin-bottom: 8px; }
   .kpi-value {
-    font-size: 1.9rem;
-    font-weight: 600;
-    font-family: 'DM Mono', monospace;
-    letter-spacing: -0.03em;
-    line-height: 1;
-    margin-bottom: 4px;
+    font-size: 1.75rem; font-weight: 700;
+    font-family: 'DM Mono', monospace; letter-spacing: -0.03em; line-height: 1; margin-bottom: 4px;
   }
-
-  .kpi-card.cat-l .kpi-value { color: var(--accent-l); }
-  .kpi-card.cat-p .kpi-value { color: var(--accent-p); }
-  .kpi-card.cat-m .kpi-value { color: var(--accent-m); }
   .kpi-card.cat-total .kpi-value { color: var(--accent-total); }
+  .kpi-card.cat-l     .kpi-value { color: var(--accent-l); }
+  .kpi-card.cat-p     .kpi-value { color: var(--accent-p); }
+  .kpi-card.cat-m     .kpi-value { color: var(--accent-m); }
+  .kpi-sub { font-size: 0.78rem; color: var(--text-sub); font-weight: 500; }
 
-  .kpi-sub { font-size: 0.75rem; color: var(--text-dim); }
-
-  /* Charts */
-  .grid-2 {
-    display: grid;
-    grid-template-columns: 3fr 2fr;
-    gap: 14px;
-    margin-bottom: 14px;
+  .main-tabs {
+    display: flex; gap: 2px; margin-bottom: 16px;
+    border-bottom: 2px solid var(--border);
   }
+
+  .main-tab-btn {
+    background: none; border: none; padding: 10px 22px;
+    font-size: 0.9rem; font-family: inherit; font-weight: 600;
+    cursor: pointer; color: var(--text-sub);
+    border-bottom: 3px solid transparent; margin-bottom: -2px;
+    transition: color 0.15s, border-color 0.15s;
+    white-space: nowrap;
+  }
+  .main-tab-btn:hover:not(.active) { color: var(--text); }
+  .main-tab-btn.active { color: var(--text); }
+  .main-tab-btn.active.tab-total { border-bottom-color: var(--accent-total); }
+  .main-tab-btn.active.tab-l     { border-bottom-color: var(--accent-l); }
+  .main-tab-btn.active.tab-p     { border-bottom-color: var(--accent-p); }
+  .main-tab-btn.active.tab-m     { border-bottom-color: var(--accent-m); }
+  .main-tab-btn.active.tab-ch    { border-bottom-color: #374151; }
+
+  .main-tab-pane { display: none; }
+  .main-tab-pane.active { display: block; }
 
   .card {
-    background: var(--surface);
-    border: 1.5px solid var(--border);
-    border-radius: 12px;
-    padding: 20px;
+    background: var(--surface); border: 2px solid var(--border);
+    border-radius: 12px; padding: 20px 22px; margin-bottom: 14px;
   }
 
-  .card-title {
-    font-size: 0.75rem;
-    color: var(--text-dim);
-    font-weight: 500;
-    letter-spacing: 0.06em;
-    margin-bottom: 14px;
-    text-transform: uppercase;
+  .card-title { font-size: 0.88rem; font-weight: 700; color: var(--text); margin-bottom: 16px; }
+
+  .chart-wrap { position: relative; height: 280px; }
+
+  .chart-donut-grid {
+    display: grid; grid-template-columns: 3fr 2fr;
+    gap: 14px; margin-bottom: 14px;
   }
 
-  .chart-wrap { position: relative; height: 260px; }
+  .table-wrap { overflow-x: auto; }
 
-  /* Tabs */
-  .tabs {
-    display: flex;
-    gap: 0;
-    margin-bottom: 16px;
-    border-bottom: 1.5px solid var(--border);
-  }
-
-  .tab-btn {
-    background: none;
-    border: none;
-    color: var(--text-dim);
-    font-family: inherit;
-    font-size: 0.82rem;
-    padding: 8px 18px;
-    cursor: pointer;
-    border-bottom: 2px solid transparent;
-    margin-bottom: -1.5px;
-    transition: color 0.15s, border-color 0.15s;
-    font-weight: 500;
-  }
-
-  .tab-btn.active { color: var(--text); border-bottom-color: var(--accent-total); }
-  .tab-btn:hover:not(.active) { color: var(--text); }
-
-  .tab-pane { display: none; overflow-x: auto; }
-  .tab-pane.active { display: block; }
-
-  /* Table */
-  table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
 
   th {
-    text-align: right;
-    color: var(--text-dim);
-    font-weight: 500;
-    padding: 7px 10px;
-    border-bottom: 1.5px solid var(--border);
-    font-family: 'DM Mono', monospace;
-    font-size: 0.72rem;
-    white-space: nowrap;
-    background: var(--bg);
+    text-align: right; color: var(--text); font-weight: 700;
+    padding: 9px 11px; border-bottom: 2px solid var(--border);
+    font-family: 'DM Mono', monospace; font-size: 0.78rem;
+    white-space: nowrap; background: var(--bg);
   }
-
-  th:first-child, th:nth-child(2) { text-align: left; }
+  th:first-child { text-align: left; }
 
   td {
-    text-align: right;
-    padding: 6px 10px;
+    text-align: right; padding: 8px 11px;
     border-bottom: 1px solid var(--border-light);
-    font-family: 'DM Mono', monospace;
-    color: var(--text-dim);
-    white-space: nowrap;
+    font-family: 'DM Mono', monospace; font-size: 0.85rem;
+    color: var(--text); white-space: nowrap;
   }
-
-  td:first-child, td:nth-child(2) {
-    text-align: left;
-    color: var(--text);
-    font-family: 'Noto Sans JP', 'Noto Sans TC', sans-serif;
-    font-size: 0.82rem;
+  td:first-child {
+    text-align: left; font-family: 'Noto Sans JP', 'Noto Sans TC', sans-serif;
+    font-size: 0.88rem; font-weight: 500;
   }
-
   tr:last-child td { border-bottom: none; }
+  tr:hover:not(.total-row) td { background: var(--bg); }
 
-  .total-row td {
-    color: var(--accent-total) !important;
-    font-weight: 600;
-    border-top: 1.5px solid var(--border);
-    background: var(--accent-total-light);
-  }
+  .total-row td { font-weight: 700; border-top: 2px solid var(--border); border-bottom: none; }
+  .total-row.c-total td { color: var(--accent-total); background: var(--accent-total-bg); }
+  .total-row.c-l     td { color: var(--accent-l);     background: var(--accent-l-bg); }
+  .total-row.c-p     td { color: var(--accent-p);     background: var(--accent-p-bg); }
+  .total-row.c-m     td { color: var(--accent-m);     background: var(--accent-m-bg); }
 
   .cat-badge {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 0.75rem;
-    font-weight: 500;
+    display: inline-block; padding: 3px 9px; border-radius: 5px;
+    font-size: 0.78rem; font-weight: 600;
   }
-
-  .badge-l { background: var(--accent-l-light); color: var(--accent-l); }
-  .badge-p { background: var(--accent-p-light); color: var(--accent-p); }
-  .badge-m { background: var(--accent-m-light); color: var(--accent-m); }
+  .badge-l     { background: var(--accent-l-bg);     color: var(--accent-l); }
+  .badge-p     { background: var(--accent-p-bg);     color: var(--accent-p); }
+  .badge-m     { background: var(--accent-m-bg);     color: var(--accent-m); }
+  .badge-total { background: var(--accent-total-bg); color: var(--accent-total); }
 
   .loading {
     display: flex; align-items: center; justify-content: center;
-    height: 200px; color: var(--text-dim); font-size: 0.9rem; gap: 10px;
+    height: 200px; color: var(--text-sub); font-size: 1rem; gap: 12px;
   }
-
   .spinner {
-    width: 20px; height: 20px;
-    border: 2px solid var(--border);
-    border-top-color: var(--accent-total);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
+    width: 22px; height: 22px; border: 3px solid var(--border);
+    border-top-color: var(--accent-total); border-radius: 50%;
+    animation: spin 0.7s linear infinite;
   }
-
   @keyframes spin { to { transform: rotate(360deg); } }
-
-  .error { color: #e53e3e; text-align: center; padding: 40px; font-size: 0.9rem; }
+  .error { color: var(--accent-total); text-align: center; padding: 40px; font-size: 1rem; }
 
   @media (max-width: 900px) {
-    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
-    .grid-2 { grid-template-columns: 1fr; }
-    body { padding: 16px; }
+    .kpi-grid { grid-template-columns: repeat(2,1fr); }
+    .chart-donut-grid { grid-template-columns: 1fr; }
+    body { padding: 14px; }
   }
 </style>
 </head>
@@ -269,7 +188,7 @@
 <header>
   <div class="header-left">
     <h1 id="h-title">FY25 銷售額儀表板</h1>
-    <span id="data-info">讀取中…</span>
+    <span id="data-info">載入中…</span>
   </div>
   <div class="lang-toggle">
     <button class="lang-btn" onclick="setLang('ja')">日本語</button>
@@ -278,57 +197,50 @@
 </header>
 
 <div id="app">
-  <div class="loading"><div class="spinner"></div><span id="loading-text">載入資料中…</span></div>
+  <div class="loading"><div class="spinner"></div><span>載入資料中…</span></div>
 </div>
 
 <script>
 const MONTHS = ['4月','5月','6月','7月','8月','9月','10月','11月','12月','1月','2月','3月'];
 const CAT_ORDER = ['學習','周邊','Mirafeel'];
-const CATEGORY_COLORS = { '學習': '#3b6ef8', '周邊': '#0fa888', 'Mirafeel': '#9b59d0' };
-const CAT_CLASS = { '學習': 'cat-l', '周邊': 'cat-p', 'Mirafeel': 'cat-m' };
-const BADGE_CLASS = { '學習': 'badge-l', '周邊': 'badge-p', 'Mirafeel': 'badge-m' };
+const CAT_COLORS = { '學習':'#2563eb', '周邊':'#059669', 'Mirafeel':'#7c3aed' };
+const CAT_CLASS  = { '學習':'cat-l',   '周邊':'cat-p',   'Mirafeel':'cat-m' };
+const BADGE_CLASS= { '學習':'badge-l', '周邊':'badge-p', 'Mirafeel':'badge-m' };
+const TAB_CLASS  = { '學習':'tab-l',   '周邊':'tab-p',   'Mirafeel':'tab-m' };
+const TOT_CLASS  = { '學習':'c-l',     '周邊':'c-p',     'Mirafeel':'c-m' };
+const CH_COLORS  = ['#2563eb','#059669','#7c3aed','#d97706','#dc2626','#0891b2'];
 
 const I18N = {
   ja: {
-    title: 'FY25 売上額ダッシュボード',
-    annual: '年間合計（税抜）',
-    total: '合計',
-    trend: '月別売上推移（万元）',
-    donut: 'カテゴリ構成比',
-    tabMonthly: '月別明細',
-    tabChannel: 'チャネル別',
-    category: 'カテゴリ',
-    channel: 'チャネル',
-    loading: '読み込み中…',
-    catNames: { '學習': '学習', '周邊': '周邊', 'Mirafeel': 'Mirafeel' }
+    title:'FY25 売上額ダッシュボード', annual:'年間合計（税抜）',
+    total:'合計', category:'カテゴリ', channel:'チャネル',
+    wan:'万元', tabTotal:'合計', tabCh:'チャネル別',
+    monthTrend:'月次推移', donutTitle:'カテゴリ構成比',
+    tableTitle:'月別明細', channelMonthly:'チャネル×月次',
+    catNames:{ '學習':'学習', '周邊':'周邊', 'Mirafeel':'Mirafeel' }
   },
   zh: {
-    title: 'FY25 銷售額儀表板',
-    annual: '年度合計（未稅）',
-    total: '合計',
-    trend: '月別銷售額趨勢（萬元）',
-    donut: '品類構成比',
-    tabMonthly: '月別明細',
-    tabChannel: '通路別',
-    category: '品類',
-    channel: '通路',
-    loading: '載入資料中…',
-    catNames: { '學習': '學習', '周邊': '周邊', 'Mirafeel': 'Mirafeel' }
+    title:'FY25 銷售額儀表板', annual:'年度合計（未稅）',
+    total:'合計', category:'品類', channel:'通路',
+    wan:'萬元', tabTotal:'合計', tabCh:'通路別',
+    monthTrend:'月次趨勢', donutTitle:'品類構成比',
+    tableTitle:'月別明細', channelMonthly:'通路×月次',
+    catNames:{ '學習':'學習', '周邊':'周邊', 'Mirafeel':'Mirafeel' }
   }
 };
 
-let currentLang = 'zh';
-let chartTrend = null, chartDonut = null;
+let lang = 'zh';
+let charts = {};
 let globalRows = null;
 
-function t(key) { return I18N[currentLang][key]; }
-function catName(c) { return I18N[currentLang].catNames[c] || c; }
+const t  = k => I18N[lang][k];
+const cn = c => I18N[lang].catNames[c] || c;
 
-function setLang(lang) {
-  currentLang = lang;
-  document.querySelectorAll('.lang-btn').forEach(b => {
-    b.classList.toggle('active', b.textContent.includes(lang === 'ja' ? '日本語' : '繁體'));
-  });
+function setLang(l) {
+  lang = l;
+  document.querySelectorAll('.lang-btn').forEach(b =>
+    b.classList.toggle('active', b.textContent.includes(l==='ja'?'日本語':'繁體'))
+  );
   if (globalRows) renderApp(globalRows);
 }
 
@@ -338,238 +250,301 @@ function parseCSV(text) {
   return lines.slice(1).map(line => {
     const vals = line.split(',');
     const obj = {};
-    headers.forEach((h, i) => {
-      obj[h.trim()] = isNaN(vals[i]) || vals[i].trim() === '' ? vals[i].trim() : Number(vals[i]);
+    headers.forEach((h,i) => {
+      const v = vals[i]?.trim();
+      obj[h.trim()] = (v!==''&&!isNaN(v)) ? Number(v) : (v||'');
     });
     return obj;
   });
 }
 
-function aggregateByCategory(rows) {
-  const result = {};
+function aggByCategory(rows) {
+  const r = {};
   rows.forEach(row => {
-    const cat = row.category;
-    if (!result[cat]) result[cat] = { category: cat, months: Object.fromEntries(MONTHS.map(m => [m, 0])) };
-    MONTHS.forEach(m => { result[cat].months[m] += row[m] || 0; });
+    const c = row.category;
+    if (!r[c]) r[c] = { category:c, months:Object.fromEntries(MONTHS.map(m=>[m,0])) };
+    MONTHS.forEach(m => { r[c].months[m] += row[m]||0; });
   });
-  return result;
+  return r;
 }
 
-function fmtWan(n) { return (n / 10000).toFixed(1) + '万'; }
+function fmtWanShort(n) {
+  const w = n/10000;
+  const parts = w.toFixed(1).split('.');
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g,',');
+  return parts.join('.');
+}
 
-function renderApp(rows) {
-  globalRows = rows;
-  const byCategory = aggregateByCategory(rows);
-  const cats = CAT_ORDER.map(c => byCategory[c]).filter(Boolean);
+function destroyChart(id) {
+  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+}
 
-  const totals = {};
-  cats.forEach(c => { totals[c.category] = MONTHS.reduce((s, m) => s + c.months[m], 0); });
-  const grandTotal = Object.values(totals).reduce((a, b) => a + b, 0);
+const gridColor = '#edf0f5';
+const tickStyle = { color:'#111827', font:{ size:12, weight:'600' } };
 
-  const totalByMonth = {};
-  MONTHS.forEach(m => { totalByMonth[m] = cats.reduce((s, c) => s + c.months[m], 0); });
-
-  document.getElementById('h-title').textContent = t('title');
-  document.getElementById('data-info').textContent = `FY25 (4月〜3月)`;
-
-  // チャネル×製品テーブル用: チャネル一覧を取得し製品別に集計
-  const channels = [...new Set(rows.map(r => r.channel))];
-  const channelData = {};
-  channels.forEach(ch => {
-    channelData[ch] = { channel: ch };
-    CAT_ORDER.forEach(cat => {
-      channelData[ch][cat] = 0;
-    });
-    channelData[ch].total = 0;
-  });
-  rows.forEach(r => {
-    const total = MONTHS.reduce((s, m) => s + (r[m] || 0), 0);
-    if (channelData[r.channel]) {
-      channelData[r.channel][r.category] = (channelData[r.channel][r.category] || 0) + total;
-      channelData[r.channel].total += total;
-    }
-  });
-  const channelRows = Object.values(channelData).sort((a, b) => b.total - a.total);
-  const channelTotals = { total: grandTotal };
-  CAT_ORDER.forEach(cat => { channelTotals[cat] = totals[cat] || 0; });
-
-  const app = document.getElementById('app');
-  app.innerHTML = `
-    <div class="kpi-grid">
-      ${CAT_ORDER.map(cat => `
-        <div class="kpi-card ${CAT_CLASS[cat]}">
-          <div class="kpi-label">${catName(cat)}</div>
-          <div class="kpi-value">${fmtWan(totals[cat] || 0)}</div>
-          <div class="kpi-sub">${t('annual')}</div>
-        </div>
-      `).join('')}
-      <div class="kpi-card cat-total">
-        <div class="kpi-label">${t('total')}</div>
-        <div class="kpi-value">${fmtWan(grandTotal)}</div>
-        <div class="kpi-sub">${t('annual')}</div>
-      </div>
-    </div>
-
-    <div class="grid-2">
-      <div class="card">
-        <div class="card-title">${t('trend')}</div>
-        <div class="chart-wrap"><canvas id="chart-trend"></canvas></div>
-      </div>
-      <div class="card">
-        <div class="card-title">${t('donut')}</div>
-        <div class="chart-wrap"><canvas id="chart-donut"></canvas></div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab(this,'tab-monthly')">${t('tabMonthly')}</button>
-        <button class="tab-btn" onclick="switchTab(this,'tab-channel')">${t('tabChannel')}</button>
-      </div>
-
-      <div id="tab-monthly" class="tab-pane active">
-        <table>
-          <thead><tr>
-            <th>${t('category')}</th>
-            ${MONTHS.map(m => `<th>${m}</th>`).join('')}
-            <th>${t('total')}</th>
-          </tr></thead>
-          <tbody>
-            ${cats.map(c => `
-              <tr>
-                <td><span class="cat-badge ${BADGE_CLASS[c.category]}">${catName(c.category)}</span></td>
-                ${MONTHS.map(m => `<td>${fmtWan(c.months[m])}</td>`).join('')}
-                <td>${fmtWan(totals[c.category])}</td>
-              </tr>
-            `).join('')}
-            <tr class="total-row">
-              <td>${t('total')}</td>
-              ${MONTHS.map(m => `<td>${fmtWan(totalByMonth[m])}</td>`).join('')}
-              <td>${fmtWan(grandTotal)}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div id="tab-channel" class="tab-pane">
-        <table>
-          <thead><tr>
-            <th>${t('channel')}</th>
-            ${CAT_ORDER.map(cat => `<th>${catName(cat)}</th>`).join('')}
-            <th>${t('total')}</th>
-          </tr></thead>
-          <tbody>
-            ${channelRows.map(r => `
-              <tr>
-                <td>${r.channel}</td>
-                ${CAT_ORDER.map(cat => `<td>${fmtWan(r[cat] || 0)}</td>`).join('')}
-                <td>${fmtWan(r.total)}</td>
-              </tr>
-            `).join('')}
-            <tr class="total-row">
-              <td>${t('total')}</td>
-              ${CAT_ORDER.map(cat => `<td>${fmtWan(channelTotals[cat])}</td>`).join('')}
-              <td>${fmtWan(grandTotal)}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  `;
-
-  // Trend chart
-  if (chartTrend) chartTrend.destroy();
-  chartTrend = new Chart(document.getElementById('chart-trend'), {
-    type: 'bar',
-    data: {
-      labels: MONTHS,
-      datasets: cats.map(c => ({
-        label: catName(c.category),
-        data: MONTHS.map(m => parseFloat((c.months[m] / 10000).toFixed(1))),
-        backgroundColor: CATEGORY_COLORS[c.category] + 'dd',
-        borderRadius: 3,
-      }))
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { labels: { color: '#7a839e', font: { size: 11 } } } },
-      scales: {
-        x: { stacked: true, ticks: { color: '#7a839e', font: { size: 10 } }, grid: { color: '#f0f2f6' } },
-        y: { stacked: true, ticks: { color: '#7a839e', font: { size: 10 }, callback: v => v + '万' }, grid: { color: '#f0f2f6' } }
+function makeBarChart(id, labels, datasets, unit) {
+  destroyChart(id);
+  const el = document.getElementById(id); if(!el) return;
+  charts[id] = new Chart(el, {
+    type:'bar',
+    data:{ labels, datasets },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ labels:{ color:'#111827', font:{ size:13, weight:'600' } } } },
+      scales:{
+        x:{ stacked:true, ticks:tickStyle, grid:{ color:gridColor } },
+        y:{ stacked:true, ticks:{ ...tickStyle, callback:v=>v.toLocaleString()+unit }, grid:{ color:gridColor } }
       }
     }
   });
+}
 
-  // Donut chart with % labels
-  if (chartDonut) chartDonut.destroy();
-  const donutLabels = CAT_ORDER.map(c => catName(c));
-  const donutData = CAT_ORDER.map(c => parseFloat((totals[c] / 10000).toFixed(1)));
-  const donutTotal = donutData.reduce((a, b) => a + b, 0);
-
-  chartDonut = new Chart(document.getElementById('chart-donut'), {
-    type: 'doughnut',
-    data: {
-      labels: donutLabels,
-      datasets: [{
-        data: donutData,
-        backgroundColor: CAT_ORDER.map(c => CATEGORY_COLORS[c]),
-        borderWidth: 2,
-        borderColor: '#fff',
-        hoverOffset: 6
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      cutout: '58%',
-      plugins: {
-        legend: { position: 'bottom', labels: { color: '#7a839e', font: { size: 11 }, padding: 14 } },
-        tooltip: {
-          callbacks: {
-            label: ctx => {
-              const pct = ((ctx.parsed / donutTotal) * 100).toFixed(1);
-              return ` ${ctx.label}: ${ctx.parsed.toFixed(1)}万 (${pct}%)`;
-            }
-          }
-        },
-        // % 常時表示はdatalabelsプラグインなしでcanvas描画で対応
+function makeLineChart(id, labels, datasets, unit) {
+  destroyChart(id);
+  const el = document.getElementById(id); if(!el) return;
+  charts[id] = new Chart(el, {
+    type:'line',
+    data:{ labels, datasets },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ labels:{ color:'#111827', font:{ size:13, weight:'600' } } } },
+      scales:{
+        x:{ ticks:tickStyle, grid:{ color:gridColor } },
+        y:{ ticks:{ ...tickStyle, callback:v=>v.toLocaleString()+unit }, grid:{ color:gridColor } }
       },
-      animation: { onComplete: function() { drawDonutLabels(this); } }
+      elements:{ line:{ tension:0.3 }, point:{ radius:4, hoverRadius:6 } }
     }
   });
 }
 
-function drawDonutLabels(chart) {
+function makeDonutChart(id, labels, data, colors) {
+  destroyChart(id);
+  const el = document.getElementById(id); if(!el) return;
+  const total = data.reduce((a,b)=>a+b,0);
+  charts[id] = new Chart(el, {
+    type:'doughnut',
+    data:{ labels, datasets:[{ data, backgroundColor:colors, borderWidth:2, borderColor:'#fff', hoverOffset:6 }] },
+    options:{
+      responsive:true, maintainAspectRatio:false, cutout:'58%',
+      plugins:{
+        legend:{ position:'bottom', labels:{ color:'#111827', font:{ size:13, weight:'600' }, padding:14 } },
+        tooltip:{ callbacks:{ label:ctx=>` ${ctx.label}: ${fmtWanShort(ctx.parsed*10000)} (${((ctx.parsed/total)*100).toFixed(1)}%)` } }
+      },
+      animation:{ onComplete(){ drawPctLabels(this); } }
+    }
+  });
+}
+
+function drawPctLabels(chart) {
   const ctx = chart.ctx;
   const meta = chart.getDatasetMeta(0);
-  const total = chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+  const total = chart.data.datasets[0].data.reduce((a,b)=>a+b,0);
   ctx.save();
-  ctx.font = '600 11px DM Mono, monospace';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  meta.data.forEach((arc, i) => {
-    const pct = ((chart.data.datasets[0].data[i] / total) * 100).toFixed(1) + '%';
-    const angle = (arc.startAngle + arc.endAngle) / 2;
-    const r = (arc.innerRadius + arc.outerRadius) / 2;
-    const x = arc.x + Math.cos(angle) * r;
-    const y = arc.y + Math.sin(angle) * r;
+  ctx.font = '700 12px DM Mono,monospace';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  meta.data.forEach((arc,i) => {
+    const pct = ((chart.data.datasets[0].data[i]/total)*100).toFixed(1)+'%';
+    const angle = (arc.startAngle+arc.endAngle)/2;
+    const r = (arc.innerRadius+arc.outerRadius)/2;
     ctx.fillStyle = '#fff';
-    ctx.fillText(pct, x, y);
+    ctx.fillText(pct, arc.x+Math.cos(angle)*r, arc.y+Math.sin(angle)*r);
   });
   ctx.restore();
 }
 
-function switchTab(btn, id) {
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById(id).classList.add('active');
+function renderApp(rows) {
+  globalRows = rows;
+  const byCategory = aggByCategory(rows);
+  const cats = CAT_ORDER.map(c=>byCategory[c]).filter(Boolean);
+  const totals = {};
+  cats.forEach(c=>{ totals[c.category]=MONTHS.reduce((s,m)=>s+c.months[m],0); });
+  const grandTotal = Object.values(totals).reduce((a,b)=>a+b,0);
+  const totalByMonth = {};
+  MONTHS.forEach(m=>{ totalByMonth[m]=cats.reduce((s,c)=>s+c.months[m],0); });
+
+  // チャネル集計
+  const channels = [...new Set(rows.map(r=>r.channel))];
+  const chData = {};
+  channels.forEach(ch=>{
+    chData[ch]={};
+    CAT_ORDER.forEach(cat=>{ chData[ch][cat]=Object.fromEntries(MONTHS.map(m=>[m,0])); });
+  });
+  rows.forEach(r=>{
+    MONTHS.forEach(m=>{ chData[r.channel][r.category][m]+=r[m]||0; });
+  });
+  const chTotalVal = ch => MONTHS.reduce((s,m)=>s+CAT_ORDER.reduce((ss,cat)=>ss+chData[ch][cat][m],0),0);
+  const sortedCh = [...channels].sort((a,b)=>chTotalVal(b)-chTotalVal(a));
+
+  const unit = lang==='zh'?' 萬':' 万';
+
+  document.getElementById('h-title').textContent = t('title');
+  document.getElementById('data-info').textContent = `FY25 (4月〜3月)`;
+
+  document.getElementById('app').innerHTML = `
+    <div class="kpi-grid">
+      <div class="kpi-card cat-total">
+        <div class="kpi-label">${t('total')}</div>
+        <div class="kpi-value">${fmtWanShort(grandTotal)}</div>
+        <div class="kpi-sub">${t('annual')}</div>
+      </div>
+      ${CAT_ORDER.map(cat=>`
+        <div class="kpi-card ${CAT_CLASS[cat]}">
+          <div class="kpi-label">${cn(cat)}</div>
+          <div class="kpi-value">${fmtWanShort(totals[cat]||0)}</div>
+          <div class="kpi-sub">${t('annual')}</div>
+        </div>
+      `).join('')}
+    </div>
+
+    <div class="main-tabs">
+      <button class="main-tab-btn tab-total active" onclick="switchMainTab(this,'pane-total')">${t('tabTotal')}</button>
+      ${CAT_ORDER.map(cat=>`<button class="main-tab-btn ${TAB_CLASS[cat]}" onclick="switchMainTab(this,'pane-${cat}')">${cn(cat)}</button>`).join('')}
+      <button class="main-tab-btn tab-ch" onclick="switchMainTab(this,'pane-ch')">${t('tabCh')}</button>
+    </div>
+
+    <!-- 合計タブ -->
+    <div id="pane-total" class="main-tab-pane active">
+      <div class="chart-donut-grid">
+        <div class="card">
+          <div class="card-title">${t('monthTrend')}（${t('wan')}）</div>
+          <div class="chart-wrap"><canvas id="chart-total-trend"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">${t('donutTitle')}</div>
+          <div class="chart-wrap"><canvas id="chart-donut"></canvas></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">${t('tableTitle')}</div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>${t('category')}</th>${MONTHS.map(m=>`<th>${m}</th>`).join('')}<th>${t('total')}</th></tr></thead>
+          <tbody>
+            ${cats.map(c=>`
+              <tr>
+                <td><span class="cat-badge ${BADGE_CLASS[c.category]}">${cn(c.category)}</span></td>
+                ${MONTHS.map(m=>`<td>${fmtWanShort(c.months[m])}</td>`).join('')}
+                <td><strong>${fmtWanShort(totals[c.category])}</strong></td>
+              </tr>`).join('')}
+            <tr class="total-row c-total">
+              <td>${t('total')}</td>
+              ${MONTHS.map(m=>`<td>${fmtWanShort(totalByMonth[m])}</td>`).join('')}
+              <td>${fmtWanShort(grandTotal)}</td>
+            </tr>
+          </tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- 各カテゴリタブ -->
+    ${CAT_ORDER.map(cat=>{
+      const c = byCategory[cat]; if(!c) return '';
+      const chRows = sortedCh.map(ch=>({
+        channel:ch,
+        months:chData[ch][cat],
+        total:MONTHS.reduce((s,m)=>s+chData[ch][cat][m],0)
+      })).filter(r=>r.total>0);
+      const colTotals = MONTHS.map(m=>chRows.reduce((s,r)=>s+r.months[m],0));
+      const catTotal = colTotals.reduce((a,b)=>a+b,0);
+      return `
+        <div id="pane-${cat}" class="main-tab-pane">
+          <div class="card">
+            <div class="card-title">${cn(cat)} — ${t('monthTrend')}（${t('wan')}）</div>
+            <div class="chart-wrap"><canvas id="chart-cat-${cat}"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-title">${cn(cat)} — ${t('channel')}×${t('monthTrend')}</div>
+            <div class="table-wrap"><table>
+              <thead><tr><th>${t('channel')}</th>${MONTHS.map(m=>`<th>${m}</th>`).join('')}<th>${t('total')}</th></tr></thead>
+              <tbody>
+                ${chRows.map(r=>`
+                  <tr>
+                    <td>${r.channel}</td>
+                    ${MONTHS.map(m=>`<td>${fmtWanShort(r.months[m])}</td>`).join('')}
+                    <td><strong>${fmtWanShort(r.total)}</strong></td>
+                  </tr>`).join('')}
+                <tr class="total-row ${TOT_CLASS[cat]}">
+                  <td>${t('total')}</td>
+                  ${colTotals.map(v=>`<td>${fmtWanShort(v)}</td>`).join('')}
+                  <td>${fmtWanShort(catTotal)}</td>
+                </tr>
+              </tbody>
+            </table></div>
+          </div>
+        </div>`;
+    }).join('')}
+
+    <!-- チャネル別タブ -->
+    <div id="pane-ch" class="main-tab-pane">
+      <div class="card">
+        <div class="card-title">${t('tabCh')} — ${t('monthTrend')}（${t('wan')}）上位5通路</div>
+        <div class="chart-wrap"><canvas id="chart-ch-trend"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">${t('channelMonthly')}</div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>${t('channel')}</th>${MONTHS.map(m=>`<th>${m}</th>`).join('')}<th>${t('total')}</th></tr></thead>
+          <tbody>
+            ${sortedCh.map(ch=>{
+              const mv = MONTHS.map(m=>CAT_ORDER.reduce((s,cat)=>s+chData[ch][cat][m],0));
+              const tot = mv.reduce((a,b)=>a+b,0);
+              return `<tr><td>${ch}</td>${mv.map(v=>`<td>${fmtWanShort(v)}</td>`).join('')}<td><strong>${fmtWanShort(tot)}</strong></td></tr>`;
+            }).join('')}
+            <tr class="total-row c-total">
+              <td>${t('total')}</td>
+              ${MONTHS.map(m=>`<td>${fmtWanShort(totalByMonth[m])}</td>`).join('')}
+              <td>${fmtWanShort(grandTotal)}</td>
+            </tr>
+          </tbody>
+        </table></div>
+      </div>
+    </div>
+  `;
+
+  // チャート描画
+  const unit2 = lang==='zh'?' 萬':' 万';
+  makeBarChart('chart-total-trend', MONTHS,
+    cats.map(c=>({
+      label:cn(c.category),
+      data:MONTHS.map(m=>parseFloat((c.months[m]/10000).toFixed(1))),
+      backgroundColor:CAT_COLORS[c.category]+'cc', borderRadius:3
+    })), unit2);
+
+  makeDonutChart('chart-donut',
+    CAT_ORDER.map(cn),
+    CAT_ORDER.map(cat=>parseFloat((totals[cat]/10000).toFixed(1))),
+    CAT_ORDER.map(c=>CAT_COLORS[c]));
+
+  CAT_ORDER.forEach(cat=>{
+    const c=byCategory[cat]; if(!c) return;
+    makeLineChart(`chart-cat-${cat}`, MONTHS, [{
+      label:cn(cat),
+      data:MONTHS.map(m=>parseFloat((c.months[m]/10000).toFixed(1))),
+      borderColor:CAT_COLORS[cat], backgroundColor:CAT_COLORS[cat]+'22', fill:true
+    }], unit2);
+  });
+
+  makeLineChart('chart-ch-trend', MONTHS,
+    sortedCh.slice(0,5).map((ch,i)=>({
+      label:ch,
+      data:MONTHS.map(m=>parseFloat((CAT_ORDER.reduce((s,cat)=>s+chData[ch][cat][m],0)/10000).toFixed(1))),
+      borderColor:CH_COLORS[i], backgroundColor:CH_COLORS[i]+'22', fill:false
+    })), unit2);
 }
 
-fetch('data.csv?t=' + Date.now())
-  .then(r => { if (!r.ok) throw new Error('CSV読み込み失敗 / CSV讀取失敗'); return r.text(); })
-  .then(text => { renderApp(parseCSV(text)); })
-  .catch(err => {
-    document.getElementById('app').innerHTML = `<div class="error">⚠️ ${err.message}<br><small>data.csv が同じフォルダにあるか確認 / 請確認 data.csv 是否在同一資料夾</small></div>`;
+function switchMainTab(btn, id) {
+  document.querySelectorAll('.main-tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.main-tab-pane').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(id).classList.add('active');
+  setTimeout(()=>Object.values(charts).forEach(c=>c.resize()), 50);
+}
+
+fetch('data.csv?t='+Date.now())
+  .then(r=>{ if(!r.ok) throw new Error('CSV讀取失敗'); return r.text(); })
+  .then(text=>renderApp(parseCSV(text)))
+  .catch(err=>{
+    document.getElementById('app').innerHTML =
+      `<div class="error">⚠️ ${err.message}<br><small>data.csv を同じフォルダに置いてください</small></div>`;
   });
 </script>
 </body>
