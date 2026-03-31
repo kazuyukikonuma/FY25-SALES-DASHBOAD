@@ -1,221 +1,248 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="ja">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FY25 銷售額儀表板</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap');
 
   :root {
-    --bg: #0f1117;
-    --surface: #181c27;
-    --surface2: #1e2336;
-    --border: #2a3050;
-    --text: #e8eaf0;
+    --bg: #f8f9fb;
+    --surface: #ffffff;
+    --border: #e2e6ed;
+    --border-light: #f0f2f6;
+    --text: #1a1e2e;
     --text-dim: #7a839e;
-    --accent-m: #7c6af7;
-    --accent-p: #2dd4bf;
-    --accent-l: #f472b6;
-    --accent-total: #fb923c;
-    --green: #4ade80;
-    --red: #f87171;
+    --accent-l: #3b6ef8;
+    --accent-p: #0fa888;
+    --accent-m: #9b59d0;
+    --accent-total: #e8572a;
+    --accent-l-light: #eef2ff;
+    --accent-p-light: #e6faf6;
+    --accent-m-light: #f5eeff;
+    --accent-total-light: #fff0eb;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
-    font-family: 'DM Sans', sans-serif;
+    font-family: 'Noto Sans JP', 'Noto Sans TC', sans-serif;
     background: var(--bg);
     color: var(--text);
     min-height: 100vh;
-    padding: 24px;
+    padding: 28px 32px;
   }
 
   header {
     display: flex;
-    align-items: baseline;
-    gap: 16px;
-    margin-bottom: 32px;
-    border-bottom: 1px solid var(--border);
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
     padding-bottom: 20px;
+    border-bottom: 2px solid var(--border);
   }
+
+  .header-left { display: flex; align-items: baseline; gap: 14px; }
 
   header h1 {
-    font-size: 1.4rem;
+    font-size: 1.3rem;
     font-weight: 600;
-    letter-spacing: -0.02em;
+    color: var(--text);
+    letter-spacing: -0.01em;
   }
 
-  header span {
-    font-size: 0.85rem;
+  #data-info {
+    font-size: 0.8rem;
     color: var(--text-dim);
     font-family: 'DM Mono', monospace;
   }
 
+  /* Language toggle */
+  .lang-toggle {
+    display: flex;
+    gap: 0;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .lang-btn {
+    background: none;
+    border: none;
+    padding: 6px 16px;
+    font-size: 0.8rem;
+    font-family: inherit;
+    cursor: pointer;
+    color: var(--text-dim);
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .lang-btn.active {
+    background: var(--text);
+    color: #fff;
+  }
+
+  .lang-btn:not(.active):hover { background: var(--border-light); }
+
+  /* KPI */
   .kpi-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 12px;
-    margin-bottom: 28px;
+    margin-bottom: 20px;
   }
 
   .kpi-card {
     background: var(--surface);
-    border: 1px solid var(--border);
+    border: 1.5px solid var(--border);
     border-radius: 12px;
-    padding: 20px;
+    padding: 18px 20px;
     position: relative;
     overflow: hidden;
   }
 
-  .kpi-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 3px;
-  }
-  .kpi-card.mirafeel::before { background: var(--accent-m); }
-  .kpi-card.henbien::before { background: var(--accent-p); }
-  .kpi-card.gakushuu::before { background: var(--accent-l); }
-  .kpi-card.total::before { background: var(--accent-total); }
+  .kpi-card.cat-l { border-top: 3px solid var(--accent-l); }
+  .kpi-card.cat-p { border-top: 3px solid var(--accent-p); }
+  .kpi-card.cat-m { border-top: 3px solid var(--accent-m); }
+  .kpi-card.cat-total { border-top: 3px solid var(--accent-total); }
 
   .kpi-label {
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     color: var(--text-dim);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
+    font-weight: 500;
+    letter-spacing: 0.05em;
     margin-bottom: 8px;
   }
 
   .kpi-value {
-    font-size: 1.8rem;
+    font-size: 1.9rem;
     font-weight: 600;
     font-family: 'DM Mono', monospace;
     letter-spacing: -0.03em;
     line-height: 1;
-    margin-bottom: 6px;
+    margin-bottom: 4px;
   }
 
-  .kpi-card.mirafeel .kpi-value { color: var(--accent-m); }
-  .kpi-card.henbien .kpi-value { color: var(--accent-p); }
-  .kpi-card.gakushuu .kpi-value { color: var(--accent-l); }
-  .kpi-card.total .kpi-value { color: var(--accent-total); }
+  .kpi-card.cat-l .kpi-value { color: var(--accent-l); }
+  .kpi-card.cat-p .kpi-value { color: var(--accent-p); }
+  .kpi-card.cat-m .kpi-value { color: var(--accent-m); }
+  .kpi-card.cat-total .kpi-value { color: var(--accent-total); }
 
-  .kpi-sub {
-    font-size: 0.78rem;
-    color: var(--text-dim);
-  }
+  .kpi-sub { font-size: 0.75rem; color: var(--text-dim); }
 
+  /* Charts */
   .grid-2 {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin-bottom: 16px;
+    grid-template-columns: 3fr 2fr;
+    gap: 14px;
+    margin-bottom: 14px;
   }
 
   .card {
     background: var(--surface);
-    border: 1px solid var(--border);
+    border: 1.5px solid var(--border);
     border-radius: 12px;
     padding: 20px;
   }
 
   .card-title {
-    font-size: 0.78rem;
+    font-size: 0.75rem;
     color: var(--text-dim);
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    margin-bottom: 14px;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
-    margin-bottom: 16px;
   }
 
-  .chart-wrap {
-    position: relative;
-    height: 260px;
-  }
+  .chart-wrap { position: relative; height: 260px; }
 
   /* Tabs */
   .tabs {
     display: flex;
-    gap: 4px;
+    gap: 0;
     margin-bottom: 16px;
-    border-bottom: 1px solid var(--border);
-    padding-bottom: 0;
+    border-bottom: 1.5px solid var(--border);
   }
 
   .tab-btn {
     background: none;
     border: none;
     color: var(--text-dim);
-    font-family: 'DM Sans', sans-serif;
+    font-family: inherit;
     font-size: 0.82rem;
-    padding: 8px 16px;
+    padding: 8px 18px;
     cursor: pointer;
     border-bottom: 2px solid transparent;
-    margin-bottom: -1px;
-    transition: color 0.2s, border-color 0.2s;
+    margin-bottom: -1.5px;
+    transition: color 0.15s, border-color 0.15s;
+    font-weight: 500;
   }
 
-  .tab-btn.active {
-    color: var(--text);
-    border-bottom-color: var(--accent-total);
-  }
+  .tab-btn.active { color: var(--text); border-bottom-color: var(--accent-total); }
+  .tab-btn:hover:not(.active) { color: var(--text); }
 
-  .tab-btn:hover { color: var(--text); }
-
-  .tab-pane { display: none; }
+  .tab-pane { display: none; overflow-x: auto; }
   .tab-pane.active { display: block; }
 
   /* Table */
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.82rem;
-  }
+  table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
 
   th {
     text-align: right;
     color: var(--text-dim);
     font-weight: 500;
-    padding: 6px 10px;
-    border-bottom: 1px solid var(--border);
+    padding: 7px 10px;
+    border-bottom: 1.5px solid var(--border);
     font-family: 'DM Mono', monospace;
-    font-size: 0.75rem;
+    font-size: 0.72rem;
+    white-space: nowrap;
+    background: var(--bg);
   }
 
-  th:first-child { text-align: left; }
+  th:first-child, th:nth-child(2) { text-align: left; }
 
   td {
     text-align: right;
     padding: 6px 10px;
-    border-bottom: 1px solid #1a1f30;
+    border-bottom: 1px solid var(--border-light);
     font-family: 'DM Mono', monospace;
     color: var(--text-dim);
+    white-space: nowrap;
   }
 
-  td:first-child {
+  td:first-child, td:nth-child(2) {
     text-align: left;
     color: var(--text);
-    font-family: 'DM Sans', sans-serif;
+    font-family: 'Noto Sans JP', 'Noto Sans TC', sans-serif;
+    font-size: 0.82rem;
   }
 
   tr:last-child td { border-bottom: none; }
 
   .total-row td {
-    color: var(--accent-total);
+    color: var(--accent-total) !important;
     font-weight: 600;
-    border-top: 1px solid var(--border);
+    border-top: 1.5px solid var(--border);
+    background: var(--accent-total-light);
   }
 
+  .cat-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  .badge-l { background: var(--accent-l-light); color: var(--accent-l); }
+  .badge-p { background: var(--accent-p-light); color: var(--accent-p); }
+  .badge-m { background: var(--accent-m-light); color: var(--accent-m); }
+
   .loading {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 200px;
-    color: var(--text-dim);
-    font-size: 0.9rem;
-    gap: 10px;
+    display: flex; align-items: center; justify-content: center;
+    height: 200px; color: var(--text-dim); font-size: 0.9rem; gap: 10px;
   }
 
   .spinner {
@@ -228,40 +255,83 @@
 
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  .error {
-    color: var(--red);
-    text-align: center;
-    padding: 40px;
-    font-size: 0.9rem;
-  }
+  .error { color: #e53e3e; text-align: center; padding: 40px; font-size: 0.9rem; }
 
-  @media (max-width: 768px) {
+  @media (max-width: 900px) {
     .kpi-grid { grid-template-columns: repeat(2, 1fr); }
     .grid-2 { grid-template-columns: 1fr; }
+    body { padding: 16px; }
   }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>FY25 銷售額儀表板</h1>
-  <span id="data-info">讀取中…</span>
+  <div class="header-left">
+    <h1 id="h-title">FY25 銷售額儀表板</h1>
+    <span id="data-info">讀取中…</span>
+  </div>
+  <div class="lang-toggle">
+    <button class="lang-btn" onclick="setLang('ja')">日本語</button>
+    <button class="lang-btn active" onclick="setLang('zh')">繁體中文</button>
+  </div>
 </header>
 
 <div id="app">
-  <div class="loading"><div class="spinner"></div>載入資料中…</div>
+  <div class="loading"><div class="spinner"></div><span id="loading-text">載入資料中…</span></div>
 </div>
 
 <script>
 const MONTHS = ['4月','5月','6月','7月','8月','9月','10月','11月','12月','1月','2月','3月'];
-const CATEGORY_COLORS = {
-  'Mirafeel': '#7c6af7',
-  '周邊': '#2dd4bf',
-  '學習': '#f472b6',
-  '合計': '#fb923c'
+const CAT_ORDER = ['學習','周邊','Mirafeel'];
+const CATEGORY_COLORS = { '學習': '#3b6ef8', '周邊': '#0fa888', 'Mirafeel': '#9b59d0' };
+const CAT_CLASS = { '學習': 'cat-l', '周邊': 'cat-p', 'Mirafeel': 'cat-m' };
+const BADGE_CLASS = { '學習': 'badge-l', '周邊': 'badge-p', 'Mirafeel': 'badge-m' };
+
+const I18N = {
+  ja: {
+    title: 'FY25 売上額ダッシュボード',
+    annual: '年間合計（税抜）',
+    total: '合計',
+    trend: '月別売上推移（万元）',
+    donut: 'カテゴリ構成比',
+    tabMonthly: '月別明細',
+    tabChannel: 'チャネル別',
+    category: 'カテゴリ',
+    channel: 'チャネル',
+    loading: '読み込み中…',
+    catNames: { '學習': '学習', '周邊': '周邊', 'Mirafeel': 'Mirafeel' }
+  },
+  zh: {
+    title: 'FY25 銷售額儀表板',
+    annual: '年度合計（未稅）',
+    total: '合計',
+    trend: '月別銷售額趨勢（萬元）',
+    donut: '品類構成比',
+    tabMonthly: '月別明細',
+    tabChannel: '通路別',
+    category: '品類',
+    channel: '通路',
+    loading: '載入資料中…',
+    catNames: { '學習': '學習', '周邊': '周邊', 'Mirafeel': 'Mirafeel' }
+  }
 };
 
-// CSV parse
+let currentLang = 'zh';
+let chartTrend = null, chartDonut = null;
+let globalRows = null;
+
+function t(key) { return I18N[currentLang][key]; }
+function catName(c) { return I18N[currentLang].catNames[c] || c; }
+
+function setLang(lang) {
+  currentLang = lang;
+  document.querySelectorAll('.lang-btn').forEach(b => {
+    b.classList.toggle('active', b.textContent.includes(lang === 'ja' ? '日本語' : '繁體'));
+  });
+  if (globalRows) renderApp(globalRows);
+}
+
 function parseCSV(text) {
   const lines = text.trim().split('\n');
   const headers = lines[0].split(',');
@@ -269,13 +339,12 @@ function parseCSV(text) {
     const vals = line.split(',');
     const obj = {};
     headers.forEach((h, i) => {
-      obj[h.trim()] = isNaN(vals[i]) ? vals[i].trim() : Number(vals[i]);
+      obj[h.trim()] = isNaN(vals[i]) || vals[i].trim() === '' ? vals[i].trim() : Number(vals[i]);
     });
     return obj;
   });
 }
 
-// Aggregate by category
 function aggregateByCategory(rows) {
   const result = {};
   rows.forEach(row => {
@@ -286,94 +355,96 @@ function aggregateByCategory(rows) {
   return result;
 }
 
-// Format number
-function fmt(n) {
-  if (n >= 1000000) return (n/1000000).toFixed(1) + 'M';
-  if (n >= 1000) return (n/1000).toFixed(0) + 'K';
-  return n.toLocaleString();
-}
+function fmtWan(n) { return (n / 10000).toFixed(1) + '万'; }
 
-function fmtWan(n) {
-  return (n / 10000).toFixed(1) + '万';
-}
-
-// Render
 function renderApp(rows) {
+  globalRows = rows;
   const byCategory = aggregateByCategory(rows);
-  const cats = Object.values(byCategory);
+  const cats = CAT_ORDER.map(c => byCategory[c]).filter(Boolean);
 
-  // Totals per category
   const totals = {};
-  cats.forEach(c => {
-    totals[c.category] = MONTHS.reduce((s, m) => s + c.months[m], 0);
-  });
-  const grandTotal = Object.values(totals).reduce((a,b) => a+b, 0);
+  cats.forEach(c => { totals[c.category] = MONTHS.reduce((s, m) => s + c.months[m], 0); });
+  const grandTotal = Object.values(totals).reduce((a, b) => a + b, 0);
 
-  // Grand total per month
   const totalByMonth = {};
-  MONTHS.forEach(m => {
-    totalByMonth[m] = cats.reduce((s, c) => s + c.months[m], 0);
-  });
+  MONTHS.forEach(m => { totalByMonth[m] = cats.reduce((s, c) => s + c.months[m], 0); });
 
-  document.getElementById('data-info').textContent = `FY25 (4月〜3月)　全${rows.length}行`;
+  document.getElementById('h-title').textContent = t('title');
+  document.getElementById('data-info').textContent = `FY25 (4月〜3月)`;
+
+  // チャネル×製品テーブル用: チャネル一覧を取得し製品別に集計
+  const channels = [...new Set(rows.map(r => r.channel))];
+  const channelData = {};
+  channels.forEach(ch => {
+    channelData[ch] = { channel: ch };
+    CAT_ORDER.forEach(cat => {
+      channelData[ch][cat] = 0;
+    });
+    channelData[ch].total = 0;
+  });
+  rows.forEach(r => {
+    const total = MONTHS.reduce((s, m) => s + (r[m] || 0), 0);
+    if (channelData[r.channel]) {
+      channelData[r.channel][r.category] = (channelData[r.channel][r.category] || 0) + total;
+      channelData[r.channel].total += total;
+    }
+  });
+  const channelRows = Object.values(channelData).sort((a, b) => b.total - a.total);
+  const channelTotals = { total: grandTotal };
+  CAT_ORDER.forEach(cat => { channelTotals[cat] = totals[cat] || 0; });
 
   const app = document.getElementById('app');
   app.innerHTML = `
-    <!-- KPI Cards -->
     <div class="kpi-grid">
-      ${['Mirafeel','周邊','學習'].map(cat => `
-        <div class="kpi-card ${cat === 'Mirafeel' ? 'mirafeel' : cat === '周邊' ? 'henbien' : 'gakushuu'}">
-          <div class="kpi-label">${cat}</div>
+      ${CAT_ORDER.map(cat => `
+        <div class="kpi-card ${CAT_CLASS[cat]}">
+          <div class="kpi-label">${catName(cat)}</div>
           <div class="kpi-value">${fmtWan(totals[cat] || 0)}</div>
-          <div class="kpi-sub">年間合計（税抜）</div>
+          <div class="kpi-sub">${t('annual')}</div>
         </div>
       `).join('')}
-      <div class="kpi-card total">
-        <div class="kpi-label">合計</div>
+      <div class="kpi-card cat-total">
+        <div class="kpi-label">${t('total')}</div>
         <div class="kpi-value">${fmtWan(grandTotal)}</div>
-        <div class="kpi-sub">全カテゴリ合算</div>
+        <div class="kpi-sub">${t('annual')}</div>
       </div>
     </div>
 
-    <!-- Charts -->
     <div class="grid-2">
       <div class="card">
-        <div class="card-title">月別売上推移（万元）</div>
+        <div class="card-title">${t('trend')}</div>
         <div class="chart-wrap"><canvas id="chart-trend"></canvas></div>
       </div>
       <div class="card">
-        <div class="card-title">カテゴリ構成比</div>
+        <div class="card-title">${t('donut')}</div>
         <div class="chart-wrap"><canvas id="chart-donut"></canvas></div>
       </div>
     </div>
 
-    <!-- Detail Table with Tabs -->
     <div class="card">
       <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab(this,'tab-monthly')">月別明細</button>
-        <button class="tab-btn" onclick="switchTab(this,'tab-channel')">チャネル別</button>
+        <button class="tab-btn active" onclick="switchTab(this,'tab-monthly')">${t('tabMonthly')}</button>
+        <button class="tab-btn" onclick="switchTab(this,'tab-channel')">${t('tabChannel')}</button>
       </div>
 
       <div id="tab-monthly" class="tab-pane active">
         <table>
-          <thead>
-            <tr>
-              <th>カテゴリ</th>
-              ${MONTHS.map(m => `<th>${m}</th>`).join('')}
-              <th>合計</th>
-            </tr>
-          </thead>
+          <thead><tr>
+            <th>${t('category')}</th>
+            ${MONTHS.map(m => `<th>${m}</th>`).join('')}
+            <th>${t('total')}</th>
+          </tr></thead>
           <tbody>
             ${cats.map(c => `
               <tr>
-                <td>${c.category}</td>
-                ${MONTHS.map(m => `<td>${fmt(c.months[m])}</td>`).join('')}
+                <td><span class="cat-badge ${BADGE_CLASS[c.category]}">${catName(c.category)}</span></td>
+                ${MONTHS.map(m => `<td>${fmtWan(c.months[m])}</td>`).join('')}
                 <td>${fmtWan(totals[c.category])}</td>
               </tr>
             `).join('')}
             <tr class="total-row">
-              <td>合計</td>
-              ${MONTHS.map(m => `<td>${fmt(totalByMonth[m])}</td>`).join('')}
+              <td>${t('total')}</td>
+              ${MONTHS.map(m => `<td>${fmtWan(totalByMonth[m])}</td>`).join('')}
               <td>${fmtWan(grandTotal)}</td>
             </tr>
           </tbody>
@@ -382,23 +453,24 @@ function renderApp(rows) {
 
       <div id="tab-channel" class="tab-pane">
         <table>
-          <thead>
-            <tr>
-              <th>カテゴリ</th>
-              <th>チャネル</th>
-              ${MONTHS.map(m => `<th>${m}</th>`).join('')}
-              <th>合計</th>
-            </tr>
-          </thead>
+          <thead><tr>
+            <th>${t('channel')}</th>
+            ${CAT_ORDER.map(cat => `<th>${catName(cat)}</th>`).join('')}
+            <th>${t('total')}</th>
+          </tr></thead>
           <tbody>
-            ${rows.map(r => `
+            ${channelRows.map(r => `
               <tr>
-                <td>${r.category}</td>
                 <td>${r.channel}</td>
-                ${MONTHS.map(m => `<td>${fmt(r[m])}</td>`).join('')}
-                <td>${fmtWan(MONTHS.reduce((s,m)=>s+r[m],0))}</td>
+                ${CAT_ORDER.map(cat => `<td>${fmtWan(r[cat] || 0)}</td>`).join('')}
+                <td>${fmtWan(r.total)}</td>
               </tr>
             `).join('')}
+            <tr class="total-row">
+              <td>${t('total')}</td>
+              ${CAT_ORDER.map(cat => `<td>${fmtWan(channelTotals[cat])}</td>`).join('')}
+              <td>${fmtWan(grandTotal)}</td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -406,47 +478,84 @@ function renderApp(rows) {
   `;
 
   // Trend chart
-  new Chart(document.getElementById('chart-trend'), {
+  if (chartTrend) chartTrend.destroy();
+  chartTrend = new Chart(document.getElementById('chart-trend'), {
     type: 'bar',
     data: {
       labels: MONTHS,
       datasets: cats.map(c => ({
-        label: c.category,
-        data: MONTHS.map(m => Math.round(c.months[m] / 10000)),
-        backgroundColor: CATEGORY_COLORS[c.category] + 'cc',
-        borderRadius: 4,
+        label: catName(c.category),
+        data: MONTHS.map(m => parseFloat((c.months[m] / 10000).toFixed(1))),
+        backgroundColor: CATEGORY_COLORS[c.category] + 'dd',
+        borderRadius: 3,
       }))
     },
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: { legend: { labels: { color: '#7a839e', font: { size: 11 } } } },
       scales: {
-        x: { stacked: true, ticks: { color: '#7a839e', font: { size: 10 } }, grid: { color: '#1e2336' } },
-        y: { stacked: true, ticks: { color: '#7a839e', font: { size: 10 }, callback: v => v + '万' }, grid: { color: '#1e2336' } }
+        x: { stacked: true, ticks: { color: '#7a839e', font: { size: 10 } }, grid: { color: '#f0f2f6' } },
+        y: { stacked: true, ticks: { color: '#7a839e', font: { size: 10 }, callback: v => v + '万' }, grid: { color: '#f0f2f6' } }
       }
     }
   });
 
-  // Donut chart
-  new Chart(document.getElementById('chart-donut'), {
+  // Donut chart with % labels
+  if (chartDonut) chartDonut.destroy();
+  const donutLabels = CAT_ORDER.map(c => catName(c));
+  const donutData = CAT_ORDER.map(c => parseFloat((totals[c] / 10000).toFixed(1)));
+  const donutTotal = donutData.reduce((a, b) => a + b, 0);
+
+  chartDonut = new Chart(document.getElementById('chart-donut'), {
     type: 'doughnut',
     data: {
-      labels: Object.keys(totals),
+      labels: donutLabels,
       datasets: [{
-        data: Object.keys(totals).map(k => Math.round(totals[k] / 10000)),
-        backgroundColor: Object.keys(totals).map(k => CATEGORY_COLORS[k]),
-        borderWidth: 0,
-        hoverOffset: 8
+        data: donutData,
+        backgroundColor: CAT_ORDER.map(c => CATEGORY_COLORS[c]),
+        borderWidth: 2,
+        borderColor: '#fff',
+        hoverOffset: 6
       }]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
-      cutout: '65%',
+      cutout: '58%',
       plugins: {
-        legend: { position: 'bottom', labels: { color: '#7a839e', font: { size: 11 }, padding: 16 } }
-      }
+        legend: { position: 'bottom', labels: { color: '#7a839e', font: { size: 11 }, padding: 14 } },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const pct = ((ctx.parsed / donutTotal) * 100).toFixed(1);
+              return ` ${ctx.label}: ${ctx.parsed.toFixed(1)}万 (${pct}%)`;
+            }
+          }
+        },
+        // % 常時表示はdatalabelsプラグインなしでcanvas描画で対応
+      },
+      animation: { onComplete: function() { drawDonutLabels(this); } }
     }
   });
+}
+
+function drawDonutLabels(chart) {
+  const ctx = chart.ctx;
+  const meta = chart.getDatasetMeta(0);
+  const total = chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+  ctx.save();
+  ctx.font = '600 11px DM Mono, monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  meta.data.forEach((arc, i) => {
+    const pct = ((chart.data.datasets[0].data[i] / total) * 100).toFixed(1) + '%';
+    const angle = (arc.startAngle + arc.endAngle) / 2;
+    const r = (arc.innerRadius + arc.outerRadius) / 2;
+    const x = arc.x + Math.cos(angle) * r;
+    const y = arc.y + Math.sin(angle) * r;
+    ctx.fillStyle = '#fff';
+    ctx.fillText(pct, x, y);
+  });
+  ctx.restore();
 }
 
 function switchTab(btn, id) {
@@ -456,18 +565,11 @@ function switchTab(btn, id) {
   document.getElementById(id).classList.add('active');
 }
 
-// Load CSV with cache busting
 fetch('data.csv?t=' + Date.now())
-  .then(r => {
-    if (!r.ok) throw new Error('CSV読み込み失敗');
-    return r.text();
-  })
-  .then(text => {
-    const rows = parseCSV(text);
-    renderApp(rows);
-  })
+  .then(r => { if (!r.ok) throw new Error('CSV読み込み失敗 / CSV讀取失敗'); return r.text(); })
+  .then(text => { renderApp(parseCSV(text)); })
   .catch(err => {
-    document.getElementById('app').innerHTML = `<div class="error">⚠️ ${err.message}<br><small>data.csv が同じフォルダにあるか確認してください</small></div>`;
+    document.getElementById('app').innerHTML = `<div class="error">⚠️ ${err.message}<br><small>data.csv が同じフォルダにあるか確認 / 請確認 data.csv 是否在同一資料夾</small></div>`;
   });
 </script>
 </body>
