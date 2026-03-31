@@ -414,39 +414,46 @@ function renderApp(rows) {
       +'<div class="kpi-sub">'+t('annual')+'</div></div>').join('')
     +'</div>';
 
-  // Period switcher
+  // Q/H集計版 byCat・chData を生成（粒度変換）
+  function makeQAgg(periodList) {
+    const qByCat = {};
+    CATS.forEach(cat=>{
+      qByCat[cat]={months:{}};
+      periodList.forEach(p=>{
+        qByCat[cat].months[p.key]=p.months.reduce((s,m)=>s+(byCat[cat]?byCat[cat].months[m]:0),0);
+      });
+    });
+    const qChData = {};
+    channels.forEach(ch=>{
+      qChData[ch]={};
+      CATS.forEach(cat=>{
+        qChData[ch][cat]={};
+        periodList.forEach(p=>{
+          qChData[ch][cat][p.key]=p.months.reduce((s,m)=>s+(chData[ch][cat][m]||0),0);
+        });
+      });
+    });
+    return {qByCat, qChData, keys:periodList.map(p=>p.key)};
+  }
+
+  const qAgg = makeQAgg(QUARTERS);
+  const hAgg = makeQAgg(HALVES);
+
   const swHTML = '<div class="period-sw">'
     +'<button class="period-btn active" onclick="switchPeriod(this,\'p-annual\')">'+t('periodY')+'</button>'
-    +'<button class="period-btn" onclick="switchPeriod(this,\'p-monthly\')">'+t('periodM')+'</button>'
     +'<button class="period-btn" onclick="switchPeriod(this,\'p-quarterly\')">'+t('periodQ')+'</button>'
+    +'<button class="period-btn" onclick="switchPeriod(this,\'p-half\')">'+t('periodH')+'</button>'
     +'</div>';
 
-  // 年度パネル
   const annualHTML = '<div id="p-annual" class="period-pane active">'+buildPaneHTML(MONTHS,'annual',byCat,chData,sortedCh)+'</div>';
+  const quarterlyHTML = '<div id="p-quarterly" class="period-pane">'+buildPaneHTML(qAgg.keys,'quarterly',qAgg.qByCat,qAgg.qChData,sortedCh)+'</div>';
+  const halfHTML = '<div id="p-half" class="period-pane">'+buildPaneHTML(hAgg.keys,'half',hAgg.qByCat,hAgg.qChData,sortedCh)+'</div>';
 
-  // 月別パネル（年度と同内容・別suffix）
-  const monthlyHTML = '<div id="p-monthly" class="period-pane">'+buildPaneHTML(MONTHS,'monthly',byCat,chData,sortedCh)+'</div>';
+  document.getElementById('app').innerHTML = kpiHTML+swHTML+annualHTML+quarterlyHTML+halfHTML;
 
-  // 四半期別パネル
-  const hTabs = HALVES.map((h,i)=>'<button class="q-tab-btn'+(i===0?' active':'')+'" onclick="switchQ(this,\'qt-'+h.key+'\')">'
-    +t(h.key)+' ('+h.months[0]+'〜'+h.months[5]+')</button>').join('');
-  const qTabs = QUARTERS.map(q=>'<button class="q-tab-btn" onclick="switchQ(this,\'qt-'+q.key+'\')">'+q.key+' ('+q.months[0]+'〜'+q.months[2]+')</button>').join('');
-  const hPanes = HALVES.map((h,i)=>'<div id="qt-'+h.key+'" class="q-tab-pane'+(i===0?' active':'')+'">'
-    +buildPaneHTML(h.months,'q-'+h.key,byCat,chData,sortedCh)+'</div>').join('');
-  const qPanes = QUARTERS.map(q=>'<div id="qt-'+q.key+'" class="q-tab-pane">'
-    +buildPaneHTML(q.months,'q-'+q.key,byCat,chData,sortedCh)+'</div>').join('');
-  const quarterlyHTML = '<div id="p-quarterly" class="period-pane">'
-    +'<div class="q-tabs">'+hTabs+'<div class="q-sep"></div>'+qTabs+'</div>'
-    +hPanes+qPanes+'</div>';
-
-  document.getElementById('app').innerHTML = kpiHTML+swHTML+annualHTML+monthlyHTML+quarterlyHTML;
-
-  // チャート描画（全period）
   drawCharts(MONTHS,'annual',byCat,chData,sortedCh);
-  drawCharts(MONTHS,'monthly',byCat,chData,sortedCh);
-  HALVES.forEach(h=>drawCharts(h.months,'q-'+h.key,byCat,chData,sortedCh));
-  QUARTERS.forEach(q=>drawCharts(q.months,'q-'+q.key,byCat,chData,sortedCh));
-}
+  drawCharts(qAgg.keys,'quarterly',qAgg.qByCat,qAgg.qChData,sortedCh);
+  drawCharts(hAgg.keys,'half',hAgg.qByCat,hAgg.qChData,sortedCh);
 
 // ---- スイッチ関数 ----
 function switchPeriod(btn,id){
